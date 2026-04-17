@@ -3,9 +3,14 @@ import { useEffect } from "react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Landing from "./pages/Landing";
+import Memories from "./pages/Memories";
 import TourDetails from "./pages/TourDetails";
 import HotelDetails from "./pages/HotelDetails";
 import AboutUs from "./pages/AboutUs";
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
+import UserLogin from "./pages/UserLogin";
+import UserSignup from "./pages/UserSignup";
 
 // Helper component to handle scrolling to hash on page load/change
 function ScrollToHash() {
@@ -30,19 +35,28 @@ function ScrollToHash() {
 }
 
 function App() {
+  const location = useLocation();
+  const isAdminPage = location.pathname.startsWith("/admin");
+
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans">
       <ScrollToHash />
-      <Navbar />
+      {!isAdminPage && <Navbar />}
       <main className="flex-grow">
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/about" element={<AboutUs />} />
+          <Route path="/memories" element={<Memories />} />
           <Route path="/tour/:id" element={<TourDetails />} />
           <Route path="/hotel/:id" element={<HotelDetails />} />
+          <Route path="/login" element={<UserLogin />} />
+          <Route path="/signup" element={<UserSignup />} />
+          <Route path="/admin" element={<AdminLogin />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
         </Routes>
       </main>
-      <Footer />
+      {!isAdminPage && <Footer />}
     </div>
   );
 }

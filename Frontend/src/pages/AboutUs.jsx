@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Star, ShieldCheck, Award, Heart, ChevronLeft, ChevronRight, Quote, User } from "lucide-react";
+import { supabase } from "../lib/supabase";
 
 const AboutUs = () => {
   const [feedbacks, setFeedbacks] = useState([]);
@@ -20,8 +21,20 @@ const AboutUs = () => {
 
   const fetchFeedbacks = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/feedback");
-      setFeedbacks(res.data);
+      const { data, error } = await supabase
+        .from("feedback")
+        .select("*")
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      
+      // FILTER: Only show reviews that use the generic avatars 
+      // (This hides the photo memories from the Guest Wall)
+      const textReviews = (data || []).filter(item => 
+        !item.image_url || !item.image_url.includes("supabase.co/storage")
+      );
+      
+      setFeedbacks(textReviews);
     } catch (error) {
       console.error("Error fetching feedback:", error);
     } finally {
@@ -40,7 +53,16 @@ const AboutUs = () => {
       return;
     }
     try {
-      await axios.post("http://localhost:5000/api/feedback", feedbackData);
+      const { error } = await supabase.from("feedback").insert([{
+        customer_name: feedbackData.customerName,
+        comment: feedbackData.comment,
+        rating: feedbackData.rating,
+        location: feedbackData.location,
+        image_url: feedbackData.imageUrl
+      }]);
+      
+      if (error) throw error;
+      
       setFeedbackStatus("success");
       setFeedbackData({ 
         customerName: "", 
@@ -206,9 +228,9 @@ const AboutUs = () => {
                     <div key={idx} className="bg-white p-8 rounded-[2.5rem] shadow-xl border-l-8 border-blue-600 relative overflow-hidden group hover:-translate-y-1 transition-transform">
                       <Quote className="absolute top-4 right-4 h-12 w-12 text-blue-50 opacity-20 group-hover:text-blue-100 transition-colors" />
                       <div className="flex items-center gap-4 mb-6">
-                        <img src={fb.imageUrl || maleAvatar} alt="" className="w-14 h-14 rounded-full object-cover ring-2 ring-blue-50" />
+                        <img src={fb.image_url || maleAvatar} alt="" className="w-14 h-14 rounded-full object-cover ring-2 ring-blue-50" />
                         <div>
-                          <h4 className="font-bold text-gray-900">{fb.customerName}</h4>
+                          <h4 className="font-bold text-gray-900">{fb.customer_name}</h4>
                           <div className="flex items-center gap-2">
                             <p className="text-xs text-blue-600 font-bold uppercase">{fb.location}</p>
                             <span className="text-gray-200">|</span>

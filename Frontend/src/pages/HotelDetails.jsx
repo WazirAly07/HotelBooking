@@ -1,13 +1,50 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
-import { MapPin, Star, CheckCircle, ArrowLeft, Send, Wifi, Coffee, Utensils, Mountain } from "lucide-react";
+import { MapPin, CheckCircle, ArrowLeft, Send, Wifi, Coffee, Utensils, Mountain, ShieldCheck, Star, Info, ExternalLink, Globe, Layout } from "lucide-react";
+import { supabase } from "../lib/supabase";
+
+// Google Maps API Loader Helper
+const loadGoogleMapsAPI = (callback) => {
+  const existingScript = document.getElementById("googleMaps");
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+  if (!apiKey) {
+    console.warn("Google Maps API Key missing");
+    return;
+  }
+
+  if (!existingScript) {
+    const script = document.createElement("script");
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async&callback=initHotelMapCallback`;
+    script.id = "googleMaps";
+    script.async = true;
+    script.defer = true;
+    
+    window.initHotelMapCallback = () => {
+      if (callback) callback();
+    };
+
+    document.body.appendChild(script);
+  } else if (callback) {
+    if (window.google) callback();
+    else {
+      const prevCallback = window.initHotelMapCallback;
+      window.initHotelMapCallback = () => {
+        if (prevCallback) prevCallback();
+        callback();
+      };
+    }
+  }
+};
 
 const HotelDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [hotel, setHotel] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeImage, setActiveImage] = useState(0);
+  const [mapsLoaded, setMapsLoaded] = useState(false);
+  const mapRef = useRef(null);
   const [bookingData, setBookingData] = useState({
     customerName: "",
     customerEmail: "",
@@ -18,8 +55,14 @@ const HotelDetails = () => {
   useEffect(() => {
     const fetchHotel = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/hotels/${id}`);
-        setHotel(res.data);
+        const { data, error } = await supabase
+          .from("hotels")
+          .select("*")
+          .eq("id", id)
+          .single();
+        
+        if (error) throw error;
+        setHotel(data);
       } catch (error) {
         console.error("Error fetching hotel:", error);
       } finally {
@@ -27,16 +70,44 @@ const HotelDetails = () => {
       }
     };
     fetchHotel();
+
+    loadGoogleMapsAPI(() => {
+      setMapsLoaded(true);
+    });
   }, [id]);
+
+  useEffect(() => {
+    if (mapsLoaded && hotel && mapRef.current && hotel.latitude && hotel.longitude) {
+      const pos = { lat: parseFloat(hotel.latitude), lng: parseFloat(hotel.longitude) };
+      const map = new window.google.maps.Map(mapRef.current, {
+        center: pos,
+        zoom: 15,
+        mapTypeControl: false,
+        streetViewControl: false,
+      });
+      new window.google.maps.Marker({
+        position: pos,
+        map: map,
+        title: hotel.name,
+      });
+    }
+  }, [mapsLoaded, hotel]);
+
+  const images = hotel?.image_url ? hotel.image_url.split(",").map(url => url.trim()) : [];
 
   const handleBooking = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5000/api/bookings", {
-        ...bookingData,
+      const { error } = await supabase.from("bookings").insert([{
+        customer_name: bookingData.customerName,
+        customer_email: bookingData.customerEmail,
+        booking_date: bookingData.bookingDate,
         type: "hotel",
-        targetId: id,
-      });
+        target_id: id,
+      }]);
+      
+      if (error) throw error;
+      
       setBookingStatus("success");
       setTimeout(() => navigate("/"), 3000);
     } catch (error) {
@@ -54,117 +125,215 @@ const HotelDetails = () => {
   };
 
   if (loading) return (
-    <div className="flex justify-center items-center h-screen">
-      <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
+    <div className="flex justify-center items-center h-screen bg-white">
+      <div className="flex flex-col items-center gap-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
+        <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Loading Property...</p>
+      </div>
     </div>
   );
 
   if (!hotel) return <div className="text-center py-20">Hotel not found</div>;
 
   return (
-    <div className="bg-gray-50 min-h-screen pb-20">
-      {/* Hero Banner */}
-      <div className="relative h-[60vh] overflow-hidden">
-        <img src={hotel.imageUrl} alt={hotel.name} className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end">
-          <div className="max-w-7xl mx-auto px-4 pb-12 w-full">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-              <div>
-                <div className="flex items-center gap-1 text-blue-400 font-bold mb-2 uppercase tracking-widest text-sm">
-                  <MapPin className="h-4 w-4" /> {hotel.location}
-                </div>
-                <h1 className="text-4xl md:text-6xl font-black text-white">{hotel.name}</h1>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20">
-                <p className="text-white/80 text-sm mb-1">Starting from</p>
-                <p className="text-3xl font-black text-white">PKR {hotel.pricePerNight.toLocaleString()} <span className="text-sm font-normal">/ night</span></p>
-              </div>
-            </div>
+    <div className="bg-gray-50 min-h-screen">
+      {/* Header / Navigation */}
+      <div className="bg-white border-b border-gray-100 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <button 
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-bold transition-colors"
+          >
+            <ArrowLeft className="h-5 w-5" /> Back to Search
+          </button>
+          <div className="flex items-center gap-2">
+            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm ${
+              hotel.category === 'Premium' ? 'bg-amber-500 text-white' : 
+              hotel.category === 'Standard' ? 'bg-blue-600 text-white' : 
+              'bg-gray-600 text-white'
+            }`}>
+              {hotel.category || 'Standard'} Category
+            </span>
           </div>
         </div>
-        <button 
-          onClick={() => navigate(-1)}
-          className="absolute top-8 left-8 bg-white/20 backdrop-blur-md p-3 rounded-full text-white hover:bg-white/40 transition-all"
-        >
-          <ArrowLeft className="h-6 w-6" />
-        </button>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 mt-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
-        <div className="lg:col-span-2 space-y-12">
-          <section>
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">About the Property</h2>
-            <p className="text-lg text-gray-600 leading-relaxed italic border-l-4 border-blue-600 pl-6">
+      <div className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-12">
+        
+        {/* LEFT COLUMN: Hotel Details */}
+        <div className="lg:col-span-7 space-y-10">
+          <header>
+            <div className="flex items-center gap-2 text-blue-600 font-bold mb-3 text-sm uppercase tracking-widest">
+              <MapPin className="h-4 w-4" /> {hotel.location}
+            </div>
+            <h1 className="text-4xl md:text-6xl font-black text-gray-900 leading-tight mb-6">
+              {hotel.name}
+            </h1>
+            <div className="flex items-center gap-6">
+              <div className="flex text-amber-400">
+                {[...Array(5)].map((_, i) => <Star key={i} className="h-5 w-5 fill-current" />)}
+              </div>
+              <div className="h-4 w-[1px] bg-gray-300"></div>
+              <span className="text-gray-500 font-bold uppercase tracking-widest text-xs">Official Property</span>
+            </div>
+          </header>
+
+          <section className="bg-white p-10 rounded-[40px] shadow-sm border border-gray-100 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full -mr-16 -mt-16 opacity-50"></div>
+            <h2 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
+              <Info className="text-blue-600" /> Description
+            </h2>
+            <p className="text-gray-600 leading-relaxed text-xl whitespace-pre-line font-medium">
               {hotel.description}
             </p>
           </section>
 
           <section>
-            <h2 className="text-3xl font-bold text-gray-900 mb-8">Amenities & Facilities</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-              {hotel.amenities.map((amenity, index) => (
-                <div key={index} className="flex items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                  <div className="text-blue-600">{getAmenityIcon(amenity)}</div>
-                  <span className="font-semibold text-gray-700">{amenity}</span>
+            <h2 className="text-2xl font-black text-gray-900 mb-8 flex items-center gap-3">
+              <Layout className="text-blue-600" /> Amenities & Comforts
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+              {hotel.amenities && hotel.amenities.map((amenity, index) => (
+                <div key={index} className="flex items-center gap-4 bg-white p-6 rounded-3xl border border-gray-100 hover:shadow-lg hover:border-blue-100 transition-all group">
+                  <div className="text-blue-600 bg-blue-50 p-3 rounded-2xl group-hover:scale-110 transition-transform">
+                    {getAmenityIcon(amenity)}
+                  </div>
+                  <span className="font-bold text-gray-800 text-sm uppercase tracking-tight">{amenity}</span>
                 </div>
               ))}
             </div>
           </section>
+
+          {/* Mobile Only: CTA */}
+          <div className="lg:hidden bg-blue-900 rounded-[40px] p-10 text-white text-center">
+             <p className="text-blue-300 text-xs font-black uppercase tracking-widest mb-2">Starting from</p>
+             <div className="text-5xl font-black mb-8">PKR {hotel.price_per_night?.toLocaleString()}</div>
+             <button className="w-full bg-white text-blue-900 py-5 rounded-2xl font-black text-xl shadow-xl">Reserve Now</button>
+          </div>
         </div>
 
-        {/* Booking Sidebar */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-3xl shadow-2xl p-8 sticky top-24 border border-gray-100 overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-blue-600/5 rounded-full -mr-10 -mt-10"></div>
+        {/* RIGHT COLUMN: Interactive Media */}
+        <div className="lg:col-span-5 space-y-8">
+          
+          {/* Main Visual Gallery */}
+          <div className="bg-white p-4 rounded-[48px] shadow-2xl border border-gray-100">
+            <div className="relative aspect-square rounded-[36px] overflow-hidden mb-4 group">
+              <img 
+                src={images[activeImage] || hotel.image_url} 
+                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
+                alt={hotel.name} 
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            </div>
             
-            <h3 className="text-2xl font-bold text-gray-900 mb-8">Reserve Your Stay</h3>
+            {images.length > 1 && (
+              <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar px-2">
+                {images.map((img, idx) => (
+                  <button 
+                    key={idx}
+                    onClick={() => setActiveImage(idx)}
+                    className={`relative flex-shrink-0 w-24 h-24 rounded-3xl overflow-hidden transition-all duration-500 ${
+                      activeImage === idx ? 'ring-4 ring-blue-600 scale-90' : 'opacity-40 hover:opacity-100 hover:scale-95'
+                    }`}
+                  >
+                    <img src={img} className="w-full h-full object-cover" alt="thumbnail" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Interactive Google Map Preview */}
+          <div className="bg-white p-4 rounded-[48px] shadow-xl border border-gray-100 overflow-hidden group">
+            <div className="bg-gray-100 rounded-[36px] overflow-hidden h-80 relative">
+              {hotel.latitude && hotel.longitude ? (
+                <div ref={mapRef} className="w-full h-full grayscale hover:grayscale-0 transition-all duration-1000" />
+              ) : hotel.map_link ? (
+                <iframe
+                  src={hotel.map_link}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen=""
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Hotel Location"
+                  className="grayscale hover:grayscale-0 transition-all duration-1000"
+                ></iframe>
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 gap-4">
+                  <Globe size={48} className="animate-pulse" />
+                  <span className="font-black text-xs uppercase tracking-widest">Map Preview Unavailable</span>
+                </div>
+              )}
+              
+              {hotel.location_link && (
+                <a 
+                  href={hotel.location_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="absolute bottom-6 left-6 right-6 bg-white py-4 rounded-2xl shadow-2xl flex items-center justify-center gap-3 hover:bg-blue-600 hover:text-white transition-all transform translate-y-2 group-hover:translate-y-0"
+                >
+                  <MapPin size={18} className="text-blue-600 group-hover:text-white transition-colors" />
+                  <span className="text-sm font-black uppercase tracking-widest">Open in Google Maps</span>
+                  <ExternalLink size={14} className="opacity-50" />
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* Desktop Exclusive Booking Card */}
+          <div className="bg-blue-900 rounded-[48px] shadow-2xl p-10 text-white relative overflow-hidden hidden lg:block">
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-2xl"></div>
+            
+            <div className="mb-8">
+              <p className="text-blue-300 text-xs font-black uppercase tracking-[0.2em] mb-3">Booking Rate</p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-5xl font-black">PKR {hotel.price_per_night?.toLocaleString()}</span>
+                <span className="text-blue-300 font-bold text-sm">/ night</span>
+              </div>
+            </div>
 
             {bookingStatus === "success" ? (
-              <div className="bg-green-50 text-green-700 p-8 rounded-2xl text-center space-y-4">
-                <CheckCircle className="h-16 w-16 mx-auto text-green-500" />
-                <h3 className="text-2xl font-bold">Booking Confirmed!</h3>
-                <p>We've received your request for {hotel.name}. Our team will call you shortly.</p>
+              <div className="bg-white/10 backdrop-blur-md p-8 rounded-3xl text-center space-y-4 animate-in fade-in zoom-in-95">
+                <ShieldCheck className="h-16 w-16 mx-auto text-green-400" />
+                <h3 className="text-2xl font-black">Request Sent!</h3>
+                <p className="text-blue-100 font-medium text-sm">Our concierge team will call you within 30 minutes to finalize your stay.</p>
               </div>
             ) : (
               <form onSubmit={handleBooking} className="space-y-5">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Guest Name</label>
+                <div className="space-y-4">
                   <input 
                     required
                     type="text" 
-                    className="w-full p-4 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-blue-500 outline-none"
-                    placeholder="John Doe"
+                    placeholder="Guest Full Name"
+                    className="w-full p-5 rounded-2xl bg-white/10 border border-white/10 focus:bg-white focus:text-gray-900 placeholder:text-blue-200 outline-none transition-all font-bold"
                     value={bookingData.customerName}
                     onChange={(e) => setBookingData({...bookingData, customerName: e.target.value})}
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Email Address</label>
                   <input 
                     required
                     type="email" 
-                    className="w-full p-4 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-blue-500 outline-none"
-                    placeholder="john@example.com"
+                    placeholder="Email Address"
+                    className="w-full p-5 rounded-2xl bg-white/10 border border-white/10 focus:bg-white focus:text-gray-900 placeholder:text-blue-200 outline-none transition-all font-bold"
                     value={bookingData.customerEmail}
                     onChange={(e) => setBookingData({...bookingData, customerEmail: e.target.value})}
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Check-in Date</label>
                   <input 
                     required
                     type="date" 
-                    className="w-full p-4 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full p-5 rounded-2xl bg-white/10 border border-white/10 focus:bg-white focus:text-gray-900 text-blue-200 focus:text-gray-900 outline-none transition-all font-bold"
                     value={bookingData.bookingDate}
                     onChange={(e) => setBookingData({...bookingData, bookingDate: e.target.value})}
                   />
                 </div>
                 <button 
                   type="submit"
-                  className="w-full bg-gray-900 text-white py-5 rounded-xl font-black text-lg hover:bg-black transition-all shadow-xl flex items-center justify-center gap-3 group"
+                  className="w-full bg-white text-blue-900 py-6 rounded-3xl font-black text-xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl flex items-center justify-center gap-4 group"
                 >
-                  Book Now <Send className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  Reserve Now <Send className="h-6 w-6 group-hover:translate-x-2 transition-transform" />
                 </button>
+                <p className="text-center text-[10px] text-blue-300 font-bold uppercase tracking-[0.3em] mt-6">Secure Concierge Booking</p>
               </form>
             )}
           </div>
