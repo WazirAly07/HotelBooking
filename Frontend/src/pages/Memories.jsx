@@ -58,9 +58,9 @@ const Memories = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white overflow-x-hidden">
       {/* Dynamic Header */}
-      <div className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
+      <div className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50 w-full">
         <div className="max-w-[1600px] mx-auto px-4 py-4 md:py-6 flex items-center justify-between">
           <button onClick={() => navigate(-1)} className="group flex items-center gap-2 text-gray-500 hover:text-blue-600 font-bold transition-all">
             <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" /> 
@@ -90,13 +90,13 @@ const Memories = () => {
             const activeIdx = activeImages[album.location];
 
             return (
-              <section key={idx} className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+              <section key={idx} className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 w-full max-w-full overflow-hidden">
                 <div className="flex items-center gap-4 group">
                   <div className="bg-blue-600 p-2.5 rounded-2xl shadow-xl group-hover:rotate-12 transition-transform">
                     <MapPin className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-3xl md:text-5xl font-black text-gray-900 uppercase italic tracking-tighter leading-none">
+                    <h2 className="text-2xl md:text-5xl font-black text-gray-900 uppercase italic tracking-tighter leading-none">
                       {album.location}
                     </h2>
                     <div className="flex items-center gap-2 mt-1">
@@ -106,17 +106,17 @@ const Memories = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-5 grid-flow-dense">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-5 grid-flow-dense w-full max-w-full">
                   {album.images.map((img, imgIdx) => {
                     const isActive = activeIdx === imgIdx;
                     return (
                       <div 
                         key={imgIdx}
                         onClick={() => setActiveImages({ ...activeImages, [album.location]: isActive ? null : imgIdx })}
-                        className={`relative cursor-pointer rounded-2xl md:rounded-[2rem] overflow-hidden transition-all duration-700 group border-4 ${
+                        className={`relative cursor-pointer rounded-xl md:rounded-[2rem] overflow-hidden transition-all duration-700 group border-2 md:border-4 ${
                           isActive 
-                          ? 'col-span-2 row-span-2 sm:col-span-3 sm:row-span-3 border-blue-600 shadow-2xl scale-[1.02] z-10' 
-                          : 'aspect-square border-transparent hover:border-gray-200 hover:scale-[0.98]'
+                          ? 'col-span-2 row-span-2 sm:col-span-3 sm:row-span-3 border-blue-600 shadow-2xl scale-[1.01] z-10' 
+                          : 'aspect-square border-transparent hover:border-gray-200 active:scale-95'
                         }`}
                       >
                         <img 
@@ -127,18 +127,18 @@ const Memories = () => {
                         
                         {/* Interactive Overlays */}
                         {!isActive && (
-                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                             <div className="bg-white/90 p-3 rounded-2xl transform translate-y-4 group-hover:translate-y-0 transition-transform">
-                                <ImageIcon className="text-blue-600 h-5 w-5" />
+                          <div className="absolute inset-0 bg-black/10 opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                             <div className="bg-white/90 p-2 md:p-3 rounded-xl md:rounded-2xl transform translate-y-2 md:translate-y-4 md:group-hover:translate-y-0 transition-transform">
+                                <ImageIcon className="text-blue-600 h-4 w-4 md:h-5 md:w-5" />
                              </div>
                           </div>
                         )}
 
                         {isActive && (
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none p-6 md:p-10 flex items-end">
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none p-4 md:p-10 flex items-end">
                             <div className="text-white animate-in slide-in-from-left-4">
-                              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400 mb-2">Featured Capture</p>
-                              <p className="text-xl md:text-3xl font-black italic tracking-tighter uppercase">{album.location}</p>
+                              <p className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] text-blue-400 mb-1 md:mb-2">Featured Capture</p>
+                              <p className="text-lg md:text-3xl font-black italic tracking-tighter uppercase leading-none">{album.location}</p>
                             </div>
                           </div>
                         )}
@@ -153,7 +153,7 @@ const Memories = () => {
       </div>
 
       {/* Modern Footer CTA */}
-      <section className="bg-gray-900 py-24 md:py-32 relative overflow-hidden">
+      <section className="bg-gray-900 py-24 md:py-32 relative overflow-hidden w-full">
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full blur-[100px] -mr-32 -mt-32"></div>
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-600/10 rounded-full blur-[100px] -ml-32 -mb-32"></div>
         
@@ -161,10 +161,10 @@ const Memories = () => {
           <div className="inline-flex items-center gap-2 bg-blue-600/10 text-blue-500 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest mb-8">
             <Heart size={12} className="fill-current" /> Community Gallery
           </div>
-          <h2 className="text-4xl md:text-6xl font-black text-white mb-8 tracking-tighter italic uppercase leading-none">
+          <h2 className="text-3xl md:text-6xl font-black text-white mb-8 tracking-tighter italic uppercase leading-none">
             Your Journey <br /> <span className="text-blue-600">Our Gallery</span>
           </h2>
-          <p className="text-gray-400 mb-12 text-lg font-medium max-w-2xl mx-auto leading-relaxed">
+          <p className="text-gray-400 mb-12 text-sm md:text-lg font-medium max-w-2xl mx-auto leading-relaxed px-4">
             Every photo tells a story. Share yours and let the world see the majesty of Baltistan through your lens.
           </p>
           <Link to="/" className="bg-blue-600 text-white px-12 py-5 rounded-2xl font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-blue-600/20 inline-block text-lg tracking-tight">
