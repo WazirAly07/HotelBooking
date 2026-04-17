@@ -8,7 +8,8 @@ const Landing = () => {
   const [hotels, setHotels] = useState([]);
   const [albums, setAlbums] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showPreloader, setShowPreloader] = useState(true); 
+  const [showPreloader, setShowPreloader] = useState(true);
+  const [preloaderFade, setPreloaderFade] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [user, setUser] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -97,8 +98,9 @@ const Landing = () => {
   useEffect(() => {
     fetchData();
     const timer = setTimeout(() => {
-      setShowPreloader(false);
-    }, 1500);
+      setPreloaderFade(true);
+      setTimeout(() => setShowPreloader(false), 700);
+    }, 2500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -184,21 +186,39 @@ const Landing = () => {
 
   if (showPreloader) {
     return (
-      <div className="fixed inset-0 z-[9999] bg-black flex items-center justify-center overflow-hidden">
-        <video autoPlay muted loop playsInline className="absolute w-full h-full object-cover opacity-60">
-          <source src="/src/assets/preload/preloader.mp4" type="video/mp4" />
+      <div className={`fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center transition-opacity duration-700 ${preloaderFade ? 'opacity-0' : 'opacity-100'}`}>
+        <video autoPlay muted loop playsInline className="absolute w-full h-full object-cover opacity-50 scale-105">
           <source src="https://assets.mixkit.co/videos/preview/mixkit-flying-over-a-snowy-mountain-peak-42845-large.mp4" type="video/mp4" />
         </video>
-        <div className="relative z-10 text-center">
-          <div className="flex items-center justify-center gap-3 mb-4 animate-pulse">
-            <Mountain className="h-12 w-12 text-blue-500" />
-            <span className="text-3xl font-black text-white tracking-widest uppercase">Baltistan Tourism Club</span>
-          </div>
-          <div className="w-48 h-1 bg-white/20 mx-auto rounded-full overflow-hidden">
-            <div className="h-full bg-blue-500 animate-[loading_1.5s_ease-in-out]"></div>
+        
+        <div className="relative z-10 overflow-hidden px-4">
+          <div className="flex flex-col md:flex-row items-center gap-4 animate-[slideUp_1.2s_ease-out_forwards]">
+            <Mountain className="h-16 w-16 md:h-24 md:w-24 text-blue-500 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
+            <div className="flex flex-col items-center md:items-start">
+              <span className="text-4xl md:text-8xl font-black text-white tracking-tighter uppercase italic leading-none">
+                Baltistan
+              </span>
+              <span className="text-2xl md:text-5xl font-bold text-blue-400 tracking-[0.2em] uppercase mt-[-5px]">
+                Tourism
+              </span>
+            </div>
           </div>
         </div>
-        <style>{`@keyframes loading { 0% { width: 0%; } 100% { width: 100%; } }`}</style>
+
+        <div className="relative z-10 mt-12 w-64 h-1 bg-white/10 rounded-full overflow-hidden">
+          <div className="h-full bg-blue-500 animate-[loading_2s_ease-in-out_forwards]"></div>
+        </div>
+
+        <style>{`
+          @keyframes slideUp {
+            0% { transform: translateY(100%); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+          }
+          @keyframes loading {
+            0% { width: 0%; }
+            100% { width: 100%; }
+          }
+        `}</style>
       </div>
     );
   }

@@ -25,8 +25,9 @@ const Memories = () => {
 
       // Group by location
       const grouped = (feedbackData || []).reduce((acc, current) => {
-        // Skip records without images
-        if (!current.image_url) return acc;
+        // FILTER: Only show photo memories shared via the memory form (requires registration/admin)
+        // This excludes general feedback that uses external avatars (like xsgames.co)
+        if (!current.image_url || !current.image_url.includes("supabase.co/storage")) return acc;
 
         const loc = current.location || "General";
         if (!acc[loc]) acc[loc] = { location: loc, images: [], people: {} };

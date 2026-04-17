@@ -98,6 +98,7 @@ const AdminLogin = () => {
         
         <div className="pt-4 text-center">
            <p className="text-xs text-gray-400 font-medium italic">Authorized Access Only</p>
+
         </div>
       </div>
     </div>
