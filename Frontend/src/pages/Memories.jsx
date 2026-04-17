@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { MapPin, Camera, ArrowLeft, Loader2, ChevronRight, Image as ImageIcon, Calendar } from "lucide-react";
+import { MapPin, Camera, ArrowLeft, Loader2, Image as ImageIcon, Heart } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
 const Memories = () => {
   const [albums, setAlbums] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [expandedLocations, setExpandedLocations] = useState({});
+  const [activeImages, setActiveImages] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,32 +23,14 @@ const Memories = () => {
 
       if (error) throw error;
 
-      // Group by location
       const grouped = (feedbackData || []).reduce((acc, current) => {
-        // FILTER: Only show photo memories shared via the memory form (requires registration/admin)
-        // This excludes general feedback that uses external avatars (like xsgames.co)
         if (!current.image_url || !current.image_url.includes("supabase.co/storage")) return acc;
 
         const loc = current.location || "General";
-        if (!acc[loc]) acc[loc] = { location: loc, images: [], people: {} };
+        if (!acc[loc]) acc[loc] = { location: loc, images: [] };
         
         const urls = current.image_url.split(",").map(url => url.trim()).filter(url => url !== "");
         acc[loc].images.push(...urls);
-
-        const personName = current.customer_name || "Anonymous";
-        if (!acc[loc].people[personName]) {
-          acc[loc].people[personName] = {
-            name: personName,
-            stories: []
-          };
-        }
-
-        acc[loc].people[personName].stories.push({ 
-          comment: current.comment,
-          date: current.created_at,
-          plan: current.plan,
-          images: urls
-        });
 
         return acc;
       }, {});
@@ -61,158 +43,132 @@ const Memories = () => {
     }
   };
 
-  const toggleLocation = (loc) => {
-    setExpandedLocations(prev => ({
-      ...prev,
-      [loc]: !prev[loc]
-    }));
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 text-blue-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-500 font-bold uppercase tracking-widest">Loading Gallery...</p>
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative">
+            <Loader2 className="h-16 w-16 text-blue-600 animate-spin" />
+            <Camera className="h-6 w-6 text-blue-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+          </div>
+          <p className="text-gray-400 font-black uppercase tracking-[0.3em] text-xs animate-pulse">Developing Film...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 py-6 flex items-center justify-between">
-          <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-full transition-all">
-            <ArrowLeft className="h-6 w-6 text-gray-700" />
+    <div className="min-h-screen bg-white">
+      {/* Dynamic Header */}
+      <div className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
+        <div className="max-w-[1600px] mx-auto px-4 py-4 md:py-6 flex items-center justify-between">
+          <button onClick={() => navigate(-1)} className="group flex items-center gap-2 text-gray-500 hover:text-blue-600 font-bold transition-all">
+            <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" /> 
+            <span className="hidden sm:inline uppercase tracking-widest text-xs">Explore</span>
           </button>
-          <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2">
-            <Camera className="h-6 w-6 text-blue-600" /> GUEST MEMORIES
+          
+          <h1 className="text-xl md:text-3xl font-black text-gray-900 tracking-tighter flex items-center gap-3 italic">
+            <span className="bg-blue-600 text-white px-3 py-1 rounded-xl not-italic shadow-lg shadow-blue-200">GUEST</span> 
+            ALBUMS
           </h1>
-          <div className="w-10"></div> {/* Spacer */}
+
+          <Link to="/" className="bg-gray-900 text-white px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 transition-colors shadow-lg">
+            Upload
+          </Link>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-12">
+      <div className="max-w-[1600px] mx-auto px-4 py-12 space-y-24 md:space-y-32">
         {albums.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-gray-200">
-            <ImageIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900">No memories shared yet</h2>
-            <p className="text-gray-500 mt-2">Be the first to share your journey from Baltistan!</p>
-            <Link to="/" className="inline-block mt-6 bg-blue-600 text-white px-8 py-3 rounded-full font-bold">
-              Back to Home
-            </Link>
+          <div className="text-center py-32 border-4 border-dashed border-gray-50 rounded-[40px]">
+            <ImageIcon className="h-20 w-20 text-gray-200 mx-auto mb-6" />
+            <h2 className="text-3xl font-black text-gray-900 tracking-tighter italic uppercase">No memories captured yet</h2>
+            <p className="text-gray-400 font-bold mt-2">Start your journey and be the first to post!</p>
           </div>
         ) : (
-          <div className="space-y-24">
-            {albums.map((album, idx) => {
-              return (
-                <section key={idx} className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                  <div className="flex items-center justify-between border-b-4 border-blue-600 pb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-200">
-                        <MapPin className="h-5 w-5 text-white" />
-                      </div>
-                      <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tighter italic">
-                        {album.location}
-                      </h2>
+          albums.map((album, idx) => {
+            const activeIdx = activeImages[album.location];
+
+            return (
+              <section key={idx} className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+                <div className="flex items-center gap-4 group">
+                  <div className="bg-blue-600 p-2.5 rounded-2xl shadow-xl group-hover:rotate-12 transition-transform">
+                    <MapPin className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl md:text-5xl font-black text-gray-900 uppercase italic tracking-tighter leading-none">
+                      {album.location}
+                    </h2>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="h-1 w-12 bg-blue-600 rounded-full"></div>
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{album.images.length} Captures</span>
                     </div>
                   </div>
+                </div>
 
-                  <div className="space-y-16">
-                    {Object.values(album.people).map((person, pIdx) => (
-                      <div key={pIdx} className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
-                        {/* Person Header */}
-                        <div className="p-8 border-b border-gray-50 bg-gray-50/50 flex items-center gap-4">
-                          <div className="h-14 w-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-xl font-black shadow-lg shadow-blue-200">
-                            {person.name.charAt(0)}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-5 grid-flow-dense">
+                  {album.images.map((img, imgIdx) => {
+                    const isActive = activeIdx === imgIdx;
+                    return (
+                      <div 
+                        key={imgIdx}
+                        onClick={() => setActiveImages({ ...activeImages, [album.location]: isActive ? null : imgIdx })}
+                        className={`relative cursor-pointer rounded-2xl md:rounded-[2rem] overflow-hidden transition-all duration-700 group border-4 ${
+                          isActive 
+                          ? 'col-span-2 row-span-2 sm:col-span-3 sm:row-span-3 border-blue-600 shadow-2xl scale-[1.02] z-10' 
+                          : 'aspect-square border-transparent hover:border-gray-200 hover:scale-[0.98]'
+                        }`}
+                      >
+                        <img 
+                          src={img} 
+                          className={`w-full h-full object-cover transition-transform duration-1000 ${isActive ? 'scale-100' : 'group-hover:scale-110'}`} 
+                          alt={album.location} 
+                        />
+                        
+                        {/* Interactive Overlays */}
+                        {!isActive && (
+                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                             <div className="bg-white/90 p-3 rounded-2xl transform translate-y-4 group-hover:translate-y-0 transition-transform">
+                                <ImageIcon className="text-blue-600 h-5 w-5" />
+                             </div>
                           </div>
-                          <div>
-                            <h3 className="text-xl font-black text-gray-900">{person.name}'s Journey</h3>
-                            <p className="text-blue-600 text-xs font-bold uppercase tracking-widest">Contributor</p>
-                          </div>
-                        </div>
+                        )}
 
-                        <div className="divide-y divide-gray-100">
-                          {person.stories.map((story, sIdx) => (
-                            <div key={sIdx} className="grid grid-cols-1 md:grid-cols-2">
-                              {/* Image Section */}
-                              <div className="h-80 md:h-auto relative group overflow-hidden">
-                                <img 
-                                  src={story.images[0]} 
-                                  alt={album.location} 
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                                />
-                                {story.images.length > 1 && (
-                                  <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-                                    <Camera size={12} /> +{story.images.length - 1} More Photos
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Content Section */}
-                              <div className="p-8 md:p-12 flex flex-col justify-center">
-                                <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-4">
-                                  {new Date(story.date).toLocaleDateString()}
-                                </p>
-                                <p className="text-gray-600 text-lg italic leading-relaxed mb-8 relative">
-                                  <span className="text-5xl text-blue-100 absolute -top-4 -left-6 font-serif">"</span>
-                                  {story.comment}
-                                </p>
-
-                                {story.plan && story.plan.length > 0 && (
-                                  <div className="space-y-4 pt-6 border-t border-gray-100">
-                                    <h4 className="flex items-center gap-2 text-sm font-black text-blue-600 uppercase tracking-widest">
-                                      <Calendar className="h-4 w-4" /> Trip Timeline
-                                    </h4>
-                                    <div className="grid grid-cols-1 gap-3">
-                                      {story.plan.map((day, dIdx) => (
-                                        <div key={dIdx} className="flex gap-4 items-start bg-gray-50 p-4 rounded-xl">
-                                          <span className="text-blue-600 font-black text-sm whitespace-nowrap">Day {dIdx + 1}</span>
-                                          <p className="text-sm text-gray-700 font-medium">{day}</p>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Photo Grid for additional photos in this story */}
-                                {story.images.length > 1 && (
-                                  <div className="mt-8 pt-6 border-t border-gray-100">
-                                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                      <Camera size={14} /> Gallery from this post
-                                    </h4>
-                                    <div className="grid grid-cols-4 gap-2">
-                                      {story.images.map((img, iIdx) => (
-                                        <div key={iIdx} className="aspect-square rounded-lg overflow-hidden">
-                                          <img src={img} className="w-full h-full object-cover hover:scale-110 transition-transform cursor-pointer" alt="gallery" />
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
+                        {isActive && (
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none p-6 md:p-10 flex items-end">
+                            <div className="text-white animate-in slide-in-from-left-4">
+                              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400 mb-2">Featured Capture</p>
+                              <p className="text-xl md:text-3xl font-black italic tracking-tighter uppercase">{album.location}</p>
                             </div>
-                          ))}
-                        </div>
+                          </div>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
-          </div>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })
         )}
       </div>
 
-      {/* Footer CTA */}
-      <section className="bg-blue-900 py-16 mt-20">
-        <div className="max-w-4xl mx-auto px-4 text-center text-white">
-          <h2 className="text-3xl font-black mb-4">WANT TO SEE YOUR PHOTOS HERE?</h2>
-          <p className="text-blue-200 mb-8 font-medium">Log in to your account and upload your favorite memories from your recent trip with us.</p>
-          <Link to="/" className="bg-white text-blue-900 px-10 py-4 rounded-full font-black hover:scale-105 transition-transform inline-block">
-            GO TO HOME & UPLOAD
+      {/* Modern Footer CTA */}
+      <section className="bg-gray-900 py-24 md:py-32 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full blur-[100px] -mr-32 -mt-32"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-600/10 rounded-full blur-[100px] -ml-32 -mb-32"></div>
+        
+        <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
+          <div className="inline-flex items-center gap-2 bg-blue-600/10 text-blue-500 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest mb-8">
+            <Heart size={12} className="fill-current" /> Community Gallery
+          </div>
+          <h2 className="text-4xl md:text-6xl font-black text-white mb-8 tracking-tighter italic uppercase leading-none">
+            Your Journey <br /> <span className="text-blue-600">Our Gallery</span>
+          </h2>
+          <p className="text-gray-400 mb-12 text-lg font-medium max-w-2xl mx-auto leading-relaxed">
+            Every photo tells a story. Share yours and let the world see the majesty of Baltistan through your lens.
+          </p>
+          <Link to="/" className="bg-blue-600 text-white px-12 py-5 rounded-2xl font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-blue-600/20 inline-block text-lg tracking-tight">
+            POST YOUR MEMORY
           </Link>
         </div>
       </section>

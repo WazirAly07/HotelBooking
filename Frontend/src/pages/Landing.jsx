@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { MapPin, Clock, Star, ArrowRight, ShieldCheck, Mountain, Camera, Search, Lock, Plus, Trash2, Image as ImageIcon, Upload, Loader2 } from "lucide-react";
+import { MapPin, Clock, Star, ArrowRight, ShieldCheck, Mountain, Camera, Search, Lock, Plus, Trash2, Image as ImageIcon, Upload, Loader2, Plane, Car } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
 const Landing = () => {
@@ -8,7 +8,10 @@ const Landing = () => {
   const [hotels, setHotels] = useState([]);
   const [albums, setAlbums] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showPreloader, setShowPreloader] = useState(true);
+  const [showPreloader, setShowPreloader] = useState(() => {
+    // Only show preloader if it hasn't been shown to this user before
+    return !localStorage.getItem("preloaderShown");
+  });
   const [preloaderFade, setPreloaderFade] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [user, setUser] = useState(null);
@@ -99,7 +102,10 @@ const Landing = () => {
     fetchData();
     const timer = setTimeout(() => {
       setPreloaderFade(true);
-      setTimeout(() => setShowPreloader(false), 700);
+      setTimeout(() => {
+        setShowPreloader(false);
+        localStorage.setItem("preloaderShown", "true");
+      }, 700);
     }, 2500);
     return () => clearTimeout(timer);
   }, []);
@@ -226,34 +232,34 @@ const Landing = () => {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <section className="relative h-[80vh] flex items-center justify-center bg-gray-900 overflow-hidden">
+      <section className="relative min-h-[70vh] md:h-[80vh] flex items-center justify-center bg-gray-900 overflow-hidden py-20 md:py-0">
         <div className="absolute inset-0 opacity-40 bg-gradient-to-br from-blue-900 via-indigo-900 to-teal-900"></div>
         <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-full h-full opacity-20 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent)] blur-3xl"></div>
         </div>
         
         <div className="relative z-10 max-w-7xl mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-7xl font-extrabold text-white mb-6 tracking-tight leading-tight">
-            Explore <span className="bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-transparent">Skardu</span> <br /> With Baltistan Tourism Club
+          <h1 className="text-3xl sm:text-4xl md:text-7xl font-extrabold text-white mb-6 tracking-tight leading-tight">
+            Explore <span className="bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-transparent">Skardu</span> <br className="hidden sm:block" /> With Baltistan Tourism Club
           </h1>
-          <p className="text-lg md:text-2xl text-gray-300 mb-10 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-base md:text-2xl text-gray-300 mb-10 max-w-3xl mx-auto leading-relaxed px-4 md:px-0">
             The pioneers of tourism in Baltistan. From the cold deserts of Skardu to the architectural marvels of Khaplu.
           </p>
           
-          <form onSubmit={(e) => { e.preventDefault(); fetchData(searchQuery); }} className="max-w-2xl mx-auto mb-10 relative px-4">
+          <form onSubmit={(e) => { e.preventDefault(); fetchData(searchQuery); }} className="max-w-2xl mx-auto mb-10 relative px-2">
             <input 
               type="text" 
               placeholder="Search destinations..." 
-              className="w-full py-4 md:py-5 px-6 md:px-8 pr-32 rounded-full bg-white text-gray-900 md:text-lg shadow-2xl focus:ring-4 focus:ring-blue-500/50 outline-none"
+              className="w-full py-4 md:py-5 px-6 md:px-8 pr-16 md:pr-32 rounded-full bg-white text-gray-900 md:text-lg shadow-2xl focus:ring-4 focus:ring-blue-500/50 outline-none"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <button type="submit" className="absolute right-6 md:right-2 top-2 bottom-2 bg-blue-600 hover:bg-blue-700 text-white px-4 md:px-8 rounded-full font-bold transition-all">
+            <button type="submit" className="absolute right-4 md:right-2 top-2 bottom-2 bg-blue-600 hover:bg-blue-700 text-white px-4 md:px-8 rounded-full font-bold transition-all">
               <Search className="h-5 w-5" />
             </button>
           </form>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center px-4 md:px-0">
             <button onClick={() => document.getElementById('tours').scrollIntoView({ behavior: 'smooth' })} className="px-8 py-4 bg-blue-600 text-white rounded-full font-bold transition-all shadow-lg flex items-center justify-center gap-2">Book a Tour <ArrowRight className="h-5 w-5" /></button>
             <button onClick={() => document.getElementById('hotels').scrollIntoView({ behavior: 'smooth' })} className="px-8 py-4 bg-white/10 text-white border border-white/30 rounded-full font-bold transition-all flex items-center justify-center gap-2">View Hotels <Mountain className="h-5 w-5" /></button>
           </div>
@@ -261,14 +267,14 @@ const Landing = () => {
       </section>
 
       {/* Featured Tours */}
-      <section id="tours" className="py-16 md:py-24 bg-white">
+      <section id="tours" className="py-12 md:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-4">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-10 md:mb-12 gap-4">
             <div className="text-center md:text-left">
-              <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-4">Adventure Awaits</h2>
-              <p className="text-lg text-gray-600">Our hand-picked tour packages in the Karakoram & Himalayas.</p>
+              <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-3 md:mb-4">Adventure Awaits</h2>
+              <p className="text-base md:text-lg text-gray-600">Our hand-picked tour packages in the Karakoram & Himalayas.</p>
             </div>
-            <button className="text-blue-600 font-bold hover:underline transition-all">View All Tours →</button>
+            <button className="text-blue-600 font-bold hover:underline transition-all text-sm md:text-base">View All Tours →</button>
           </div>
 
           {loading ? (
@@ -279,7 +285,15 @@ const Landing = () => {
                 <div key={tour.id} onClick={() => navigate(`/tour/${tour.id}`)} className="group bg-gray-50 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col cursor-pointer">
                   <div className="relative h-48 md:h-56 overflow-hidden">
                     <img src={tour.image_url} alt={tour.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                    <div className="absolute top-4 right-4 bg-white/90 px-3 py-1 rounded-full text-xs font-bold text-blue-600 shadow-sm uppercase tracking-wider">{tour.duration}</div>
+                    <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
+                      <div className="bg-white/90 px-3 py-1 rounded-full text-xs font-bold text-blue-600 shadow-sm uppercase tracking-wider">{tour.duration}</div>
+                      <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg ${
+                        tour.category === 'By Air' ? 'bg-amber-500 text-white' : 'bg-blue-600 text-white'
+                      }`}>
+                        {tour.category === 'By Air' ? <Plane size={12} /> : <Car size={12} />}
+                        {tour.category || 'By Road'}
+                      </div>
+                    </div>
                   </div>
                   <div className="p-6 flex flex-col flex-grow">
                     <div className="flex items-center gap-1 text-gray-500 text-xs font-medium uppercase tracking-wider mb-2"><MapPin className="h-3 w-3" /> {tour.location}</div>

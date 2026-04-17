@@ -70,7 +70,12 @@ const UserLogin = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-700 ml-1">Password</label>
+              <div className="flex justify-between items-center ml-1">
+                <label className="text-sm font-bold text-gray-700">Password</label>
+                <Link to="/forgot-password" title="Click here to reset your password"  className="text-xs font-bold text-blue-600 hover:underline">
+                  Forgot Password?
+                </Link>
+              </div>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
