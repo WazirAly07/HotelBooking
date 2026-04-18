@@ -1,5 +1,6 @@
 import { Routes, Route, useLocation, useNavigate, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { MessageCircle, Phone, X } from "lucide-react";
 import { supabase } from "./lib/supabase";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -68,7 +69,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col font-sans">
+    <div className="min-h-screen bg-white flex flex-col font-sans relative">
       <ScrollToHash />
       {!isAdminPage && !isRecoveryMode && <Navbar />}
       <main className="flex-grow">
@@ -88,6 +89,41 @@ function App() {
         </Routes>
       </main>
       {!isAdminPage && !isRecoveryMode && <Footer />}
+
+      {/* Floating Action Buttons */}
+      {!isAdminPage && (
+        <>
+          {/* Call Button - Bottom Left */}
+          <div className="fixed bottom-6 left-6 md:bottom-8 md:left-8 z-50 group">
+            <div className="absolute bottom-full left-0 mb-4 bg-white px-4 py-2 rounded-xl shadow-2xl border border-gray-100 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap">
+              <p className="text-[10px] font-black uppercase text-blue-600 tracking-widest mb-1">Call Us Now</p>
+              <p className="text-sm font-bold text-gray-900">+92 346 6444471</p>
+            </div>
+            <a 
+              href="tel:+923466444471" 
+              className="bg-blue-600 text-white p-3 md:p-4 rounded-2xl shadow-2xl hover:bg-blue-700 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center border-4 border-white"
+            >
+              <Phone size={24} fill="currentColor" className="text-white" />
+            </a>
+          </div>
+
+          {/* WhatsApp Button - Bottom Right */}
+          <div className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-50 group">
+             <div className="absolute bottom-full right-0 mb-4 bg-white px-4 py-2 rounded-xl shadow-2xl border border-gray-100 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap text-right">
+              <p className="text-[10px] font-black uppercase text-green-600 tracking-widest mb-1">Chat on WhatsApp</p>
+              <p className="text-sm font-bold text-gray-900">Online Support</p>
+            </div>
+            <a 
+              href="https://wa.me/923466444471" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="bg-green-500 text-white p-3 md:p-4 rounded-2xl shadow-2xl hover:bg-green-600 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center border-4 border-white"
+            >
+              <MessageCircle size={24} fill="currentColor" className="text-white" />
+            </a>
+          </div>
+        </>
+      )}
     </div>
   );
 }

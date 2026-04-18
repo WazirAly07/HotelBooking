@@ -88,6 +88,13 @@ const TourDetails = () => {
               {tour.category === 'By Air' ? <Plane size={14} /> : <Car size={14} />}
               {tour.category || 'By Road'}
             </span>
+            <button 
+              onClick={() => document.getElementById('booking-date-picker')?.showPicker()}
+              className="flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm bg-blue-600 text-white hover:bg-blue-700 transition-all"
+            >
+              <Calendar size={14} />
+              {bookingData.bookingDate || "Select Date"}
+            </button>
           </div>
         </div>
       </div>
@@ -142,25 +149,21 @@ const TourDetails = () => {
               <div className="flex items-center gap-2 text-blue-600 font-bold mb-2 text-xs md:text-sm uppercase tracking-widest">
                 <MapPin className="h-4 w-4" /> {tour.location}
               </div>
-              {tour.location_link && (
-                <a 
-                  href={tour.location_link} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-[10px] md:text-xs font-black text-blue-600 hover:text-blue-800 uppercase tracking-widest group"
-                >
-                  View Route <ExternalLink size={12} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                </a>
-              )}
             </div>
             <h1 className="text-3xl md:text-5xl font-black text-gray-900 leading-tight mb-4">
               {tour.name}
             </h1>
-            <div className="flex gap-4 md:gap-6 text-gray-500 font-bold text-[10px] md:text-sm">
-              <span className="flex items-center gap-1.5 md:gap-2"><Clock className="h-4 w-4 md:h-5 md:w-5 text-blue-600" /> {tour.duration}</span>
-              <span className="flex items-center gap-1.5 md:gap-2 uppercase tracking-widest italic flex items-center">
+            <div className="flex flex-wrap gap-4 md:gap-6 text-gray-500 font-bold text-[10px] md:text-sm">
+              <span className="flex items-center gap-1.5 md:gap-2 bg-white px-3 py-1.5 rounded-full border border-gray-100 shadow-sm">
+                <Clock className="h-4 w-4 text-blue-600" /> {tour.duration}
+              </span>
+              <span className="flex items-center gap-1.5 md:gap-2 bg-white px-3 py-1.5 rounded-full border border-gray-100 shadow-sm">
                 {tour.category === 'By Air' ? <Plane size={14} className="text-amber-500" /> : <Car size={14} className="text-blue-600" />}
                 {tour.category || 'By Road'} Travel
+              </span>
+              <span className="flex items-center gap-1.5 md:gap-2 bg-white px-3 py-1.5 rounded-full border border-gray-100 shadow-sm cursor-pointer hover:bg-blue-50 transition-colors" onClick={() => document.getElementById('booking-date-picker')?.showPicker()}>
+                <Calendar size={14} className="text-blue-600" />
+                {bookingData.bookingDate || "Select Tour Date"}
               </span>
             </div>
           </header>
@@ -197,35 +200,6 @@ const TourDetails = () => {
         <div className="lg:col-span-5 space-y-8">
           
           <div className="space-y-6 md:space-y-8">
-            {/* Map Preview Logic if applicable */}
-            {tour.map_link && (
-              <div className="bg-white p-3 rounded-2xl md:rounded-[32px] shadow-lg border border-gray-100 overflow-hidden">
-                <div className="bg-gray-50 rounded-xl md:rounded-[24px] overflow-hidden h-64 relative group">
-                  <iframe
-                    src={tour.map_link}
-                    width="100%"
-                    height="100%"
-                    style={{ border: 0 }}
-                    allowFullScreen=""
-                    loading="lazy"
-                    title="Tour Route"
-                    className="grayscale hover:grayscale-0 transition-all duration-700"
-                  ></iframe>
-                  {tour.location_link && (
-                    <a 
-                      href={tour.location_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="absolute top-4 left-4 bg-white px-3 md:px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-blue-600 hover:text-white transition-colors"
-                    >
-                      <MapPin size={14} className="text-blue-600" />
-                      <span className="text-[10px] md:text-xs font-black uppercase">Open Full Map</span>
-                    </a>
-                  )}
-                </div>
-              </div>
-            )}
-
             {/* Booking Card */}
             <div id="booking-form" className="bg-white rounded-2xl md:rounded-[32px] shadow-2xl p-6 md:p-8 border border-gray-100 overflow-hidden relative">
               <div className="absolute top-0 right-0 w-24 h-24 md:w-32 md:h-32 bg-blue-600/5 rounded-full -mr-12 -mt-12 md:-mr-16 md:-mt-16"></div>
@@ -266,6 +240,7 @@ const TourDetails = () => {
                   />
                   <input 
                     required
+                    id="booking-date-picker"
                     type="date" 
                     className="w-full p-4 rounded-xl md:rounded-2xl bg-gray-50 border-none focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold text-gray-700 uppercase text-xs md:text-sm"
                     value={bookingData.bookingDate}

@@ -3,48 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { MapPin, CheckCircle, ArrowLeft, Send, Wifi, Coffee, Utensils, Mountain, ShieldCheck, Star, Info, ExternalLink, Globe, Layout } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
-// Google Maps API Loader Helper
-const loadGoogleMapsAPI = (callback) => {
-  const existingScript = document.getElementById("googleMaps");
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-
-  if (!apiKey) {
-    console.warn("Google Maps API Key missing");
-    return;
-  }
-
-  if (!existingScript) {
-    const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async&callback=initHotelMapCallback`;
-    script.id = "googleMaps";
-    script.async = true;
-    script.defer = true;
-    
-    window.initHotelMapCallback = () => {
-      if (callback) callback();
-    };
-
-    document.body.appendChild(script);
-  } else if (callback) {
-    if (window.google) callback();
-    else {
-      const prevCallback = window.initHotelMapCallback;
-      window.initHotelMapCallback = () => {
-        if (prevCallback) prevCallback();
-        callback();
-      };
-    }
-  }
-};
-
 const HotelDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [hotel, setHotel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState(0);
-  const [mapsLoaded, setMapsLoaded] = useState(false);
-  const mapRef = useRef(null);
   const [bookingData, setBookingData] = useState({
     customerName: "",
     customerEmail: "",
@@ -70,28 +34,7 @@ const HotelDetails = () => {
       }
     };
     fetchHotel();
-
-    loadGoogleMapsAPI(() => {
-      setMapsLoaded(true);
-    });
   }, [id]);
-
-  useEffect(() => {
-    if (mapsLoaded && hotel && mapRef.current && hotel.latitude && hotel.longitude) {
-      const pos = { lat: parseFloat(hotel.latitude), lng: parseFloat(hotel.longitude) };
-      const map = new window.google.maps.Map(mapRef.current, {
-        center: pos,
-        zoom: 15,
-        mapTypeControl: false,
-        streetViewControl: false,
-      });
-      new window.google.maps.Marker({
-        position: pos,
-        map: map,
-        title: hotel.name,
-      });
-    }
-  }, [mapsLoaded, hotel]);
 
   const images = hotel?.image_url ? hotel.image_url.split(",").map(url => url.trim()) : [];
 
@@ -117,10 +60,11 @@ const HotelDetails = () => {
   };
 
   const getAmenityIcon = (name) => {
-    if (name.toLowerCase().includes("wifi")) return <Wifi className="h-5 w-5" />;
-    if (name.toLowerCase().includes("breakfast")) return <Coffee className="h-5 w-5" />;
-    if (name.toLowerCase().includes("restaurant") || name.toLowerCase().includes("dining")) return <Utensils className="h-5 w-5" />;
-    if (name.toLowerCase().includes("view")) return <Mountain className="h-5 w-5" />;
+    const n = name.toLowerCase();
+    if (n.includes("wifi")) return <Wifi className="h-5 w-5" />;
+    if (n.includes("breakfast")) return <Coffee className="h-5 w-5" />;
+    if (n.includes("restaurant") || n.includes("dining")) return <Utensils className="h-5 w-5" />;
+    if (n.includes("view")) return <Mountain className="h-5 w-5" />;
     return <CheckCircle className="h-5 w-5" />;
   };
 
@@ -137,7 +81,6 @@ const HotelDetails = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      {/* Header / Navigation */}
       <div className="bg-white border-b border-gray-100 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <button 
@@ -146,23 +89,12 @@ const HotelDetails = () => {
           >
             <ArrowLeft className="h-5 w-5" /> <span className="hidden sm:inline">Back to Search</span>
           </button>
-          <div className="flex items-center gap-2">
-            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm ${
-              hotel.category === 'Premium' ? 'bg-amber-500 text-white' : 
-              hotel.category === 'Standard' ? 'bg-blue-600 text-white' : 
-              'bg-gray-600 text-white'
-            }`}>
-              {hotel.category || 'Standard'} Category
-            </span>
-          </div>
         </div>
       </div>
 
-      {/* NEW HERO GALLERY SECTION */}
       <section className="bg-white border-b border-gray-100">
         <div className="max-w-[1600px] mx-auto p-4 md:p-6">
           <div className="flex flex-col md:flex-row gap-4 h-auto md:h-[600px]">
-            {/* Active Image (Large) */}
             <div className="flex-[3] aspect-video md:aspect-auto rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl relative group">
               <img 
                 src={images[activeImage] || hotel.image_url} 
@@ -174,16 +106,15 @@ const HotelDetails = () => {
               </div>
             </div>
 
-            {/* Other Images (Narrower but same height) */}
             {images.length > 1 && (
               <div className="flex-1 flex md:flex-col gap-3 md:gap-4 overflow-x-auto md:overflow-y-auto no-scrollbar pb-2 md:pb-0">
                 {images.map((img, idx) => (
                   <button 
                     key={idx}
                     onClick={() => setActiveImage(idx)}
-                    className={`relative flex-shrink-0 w-24 h-24 sm:w-32 sm:h-32 md:w-auto md:flex-1 md:h-auto rounded-xl overflow-hidden transition-all duration-500 ${
-                      activeImage === idx ? 'ring-4 ring-blue-600 opacity-100 scale-[0.98]' : 'opacity-60 hover:opacity-100 grayscale hover:grayscale-0'
-                    }`}
+                    className={"relative flex-shrink-0 w-24 h-24 sm:w-32 sm:h-32 md:w-auto md:flex-1 md:h-auto rounded-xl overflow-hidden transition-all duration-500 " + (
+                      activeImage === idx ? "ring-4 ring-blue-600 opacity-100 scale-[0.98]" : "opacity-60 hover:opacity-100 grayscale hover:grayscale-0"
+                    )}
                   >
                     <img src={img} className="w-full h-full object-cover" alt="thumbnail" />
                     {activeImage === idx && (
@@ -200,8 +131,6 @@ const HotelDetails = () => {
       </section>
 
       <div className="max-w-7xl mx-auto px-4 py-8 md:py-12 grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12">
-        
-        {/* LEFT COLUMN: Hotel Details */}
         <div className="lg:col-span-7 space-y-8 md:space-y-10">
           <header>
             <div className="flex items-center gap-2 text-blue-600 font-bold mb-2 md:mb-3 text-xs md:sm uppercase tracking-widest">
@@ -245,7 +174,6 @@ const HotelDetails = () => {
             </div>
           </section>
 
-          {/* Mobile Only: CTA */}
           <div className="lg:hidden bg-blue-900 rounded-2xl md:rounded-[40px] p-6 md:p-10 text-white text-center">
              <p className="text-blue-300 text-[10px] md:text-xs font-black uppercase tracking-widest mb-1 md:mb-2">Starting from</p>
              <div className="text-3xl md:text-5xl font-black mb-6 md:mb-8">PKR {hotel.price_per_night?.toLocaleString()}</div>
@@ -253,10 +181,7 @@ const HotelDetails = () => {
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Interactive Media */}
         <div className="lg:col-span-5 space-y-6 md:space-y-8">
-          
-          {/* Main Visual Gallery (Desktop thumbnails hide, we used hero gallery above) */}
           <div className="hidden lg:block bg-white p-4 rounded-[48px] shadow-2xl border border-gray-100">
             <div className="relative aspect-square rounded-[36px] overflow-hidden mb-4 group">
               <img 
@@ -273,9 +198,9 @@ const HotelDetails = () => {
                   <button 
                     key={idx}
                     onClick={() => setActiveImage(idx)}
-                    className={`relative flex-shrink-0 w-24 h-24 rounded-3xl overflow-hidden transition-all duration-500 ${
-                      activeImage === idx ? 'ring-4 ring-blue-600 scale-90' : 'opacity-40 hover:opacity-100 hover:scale-95'
-                    }`}
+                    className={"relative flex-shrink-0 w-24 h-24 rounded-3xl overflow-hidden transition-all duration-500 " + (
+                      activeImage === idx ? "ring-4 ring-blue-600 scale-90" : "opacity-40 hover:opacity-100 hover:scale-95"
+                    )}
                   >
                     <img src={img} className="w-full h-full object-cover" alt="thumbnail" />
                   </button>
@@ -284,49 +209,8 @@ const HotelDetails = () => {
             )}
           </div>
 
-          {/* Interactive Google Map Preview */}
-          <div className="bg-white p-3 md:p-4 rounded-2xl md:rounded-[48px] shadow-xl border border-gray-100 overflow-hidden group">
-            <div className="bg-gray-100 rounded-xl md:rounded-[36px] overflow-hidden h-64 md:h-80 relative">
-              {hotel.latitude && hotel.longitude ? (
-                <div ref={mapRef} className="w-full h-full grayscale hover:grayscale-0 transition-all duration-1000" />
-              ) : hotel.map_link ? (
-                <iframe
-                  src={hotel.map_link}
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen=""
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="Hotel Location"
-                  className="grayscale hover:grayscale-0 transition-all duration-1000"
-                ></iframe>
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 gap-3 md:gap-4">
-                  <Globe size={40} className="animate-pulse" />
-                  <span className="font-black text-[10px] md:text-xs uppercase tracking-widest">Map Preview Unavailable</span>
-                </div>
-              )}
-              
-              {hotel.location_link && (
-                <a 
-                  href={hotel.location_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="absolute bottom-4 left-4 right-4 md:bottom-6 md:left-6 md:right-6 bg-white py-3 md:py-4 rounded-xl md:rounded-2xl shadow-2xl flex items-center justify-center gap-2 md:gap-3 hover:bg-blue-600 hover:text-white transition-all transform translate-y-1 md:translate-y-2 group-hover:translate-y-0"
-                >
-                  <MapPin size={16} className="text-blue-600 group-hover:text-white transition-colors" />
-                  <span className="text-[10px] md:text-sm font-black uppercase tracking-widest">Open in Google Maps</span>
-                  <ExternalLink size={12} className="opacity-50" />
-                </a>
-              )}
-            </div>
-          </div>
-
-          {/* Booking Card */}
           <div className="bg-blue-900 rounded-2xl md:rounded-[48px] shadow-2xl p-6 md:p-10 text-white relative overflow-hidden">
             <div className="absolute -top-10 -right-10 w-32 h-32 md:w-40 md:h-40 bg-white/5 rounded-full blur-xl md:blur-2xl"></div>
-            
             <div className="mb-6 md:mb-8">
               <p className="text-blue-300 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] mb-2 md:mb-3">Booking Rate</p>
               <div className="flex items-baseline gap-2">

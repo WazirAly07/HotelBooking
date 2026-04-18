@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mountain, Map, Hotel, Phone, Camera, Info, Menu, X, LogOut, User } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import logo from "../assets/Images/logo.png";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -43,8 +44,8 @@ const Navbar = () => {
           {/* Logo */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center gap-2">
-              <Mountain className="h-8 w-8 text-blue-600" />
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-700 to-indigo-600 bg-clip-text text-transparent">
+              <img src={logo} alt="BTC Logo" className="h-10 w-auto object-contain" />
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-700 to-indigo-600 bg-clip-text text-transparent hidden sm:block">
                 Baltistan Tourism Club
               </span>
             </Link>
