@@ -43,11 +43,14 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <Link to="/" className="flex items-center gap-2">
-              <img src={logo} alt="BTC Logo" className="h-10 w-auto object-contain" />
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-700 to-indigo-600 bg-clip-text text-transparent hidden sm:block">
-                Baltistan Tourism Club
-              </span>
+            <Link to="/" className="flex items-center gap-2 group">
+              <img src={logo} alt="BTC Logo" className="h-10 md:h-12 w-auto object-contain transform group-hover:scale-110 transition-transform duration-500" />
+              <div className="flex flex-col leading-none">
+                <span className="text-xl md:text-2xl font-black text-gray-900 tracking-tighter italic uppercase">
+                  Baltistan <span className="text-blue-600">Tourism</span>
+                </span>
+                <span className="text-[10px] font-bold text-gray-400 tracking-[0.3em] uppercase ml-0.5">Club</span>
+              </div>
             </Link>
           </div>
 

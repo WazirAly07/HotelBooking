@@ -257,40 +257,52 @@ const Landing = () => {
 
   if (showPreloader) {
     return (
-      <div className={`fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center transition-opacity duration-700 ${preloaderFade ? 'opacity-0' : 'opacity-100'}`}>
+      <div className={`fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center transition-opacity duration-700 ${preloaderFade ? "opacity-0" : "opacity-100"}`}>
         <video autoPlay muted loop playsInline className="absolute w-full h-full object-cover opacity-50 scale-105">
           <source src="https://assets.mixkit.co/videos/preview/mixkit-flying-over-a-snowy-mountain-peak-42845-large.mp4" type="video/mp4" />
         </video>
         
         <div className="relative z-10 overflow-hidden px-4">
-          <div className="flex flex-col md:flex-row items-center gap-6 animate-[zoomIn_1s_ease-out_forwards]">
-            <img src={logo} alt="Logo" className="h-20 md:h-32 w-auto animate-pulse drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]" />
-            <div className="flex flex-col items-center md:items-start">
-              <span className="text-4xl md:text-8xl font-black text-white tracking-tighter uppercase italic leading-none">
-                Baltistan
-              </span>
-              <span className="text-2xl md:text-5xl font-bold text-blue-400 tracking-[0.2em] uppercase mt-[-5px]">
-                Tourism
-              </span>
+          <div className="flex flex-col items-center gap-12 animate-[zoomIn_1s_ease-out_forwards]">
+            {/* Logo made larger and rounder */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-3xl group-hover:blur-[100px] transition-all duration-700 animate-pulse"></div>
+              <img 
+                src={logo} 
+                alt="Logo" 
+                className="relative h-48 w-48 md:h-72 md:w-72 rounded-full object-cover border-8 border-white/10 shadow-[0_0_50px_rgba(59,130,246,0.3)] animate-pulse" 
+              />
+            </div>
+
+            <div className="flex flex-col items-center gap-6">
+              {/* Loader moved to top of text */}
+              <div className="w-48 md:w-80 h-2 bg-white/10 rounded-full overflow-hidden backdrop-blur-sm">
+                <div className="h-full bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.8)] animate-[loading_2s_ease-in-out_forwards]"></div>
+              </div>
+              
+              <div className="flex flex-col items-center text-center">
+                <span className="text-5xl md:text-9xl font-black text-white tracking-tighter uppercase italic leading-none">
+                  Baltistan
+                </span>
+                <span className="text-2xl md:text-5xl font-bold text-blue-400 tracking-[0.2em] uppercase mt-[-5px]">
+                  Tourism
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="relative z-10 mt-12 w-64 h-1 bg-white/10 rounded-full overflow-hidden">
-          <div className="h-full bg-blue-500 animate-[loading_2s_ease-in-out_forwards]"></div>
-        </div>
-
-        <style>{`
+        <style dangerouslySetInnerHTML={{ __html: `
           @keyframes zoomIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
           @keyframes loading { 0% { width: 0%; } 100% { width: 100%; } }
-        `}</style>
+        ` }} />
       </div>
     );
   }
 
   return (
     <div className="flex flex-col min-h-screen overflow-x-hidden">
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes fadeInDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes zoomOutHero { 0% { transform: scale(1.1); } 50% { transform: scale(1); } 100% { transform: scale(1.1); } }
@@ -301,7 +313,7 @@ const Landing = () => {
         .delay-500 { animation-delay: 0.5s; }
         .reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s ease-out; }
         .reveal.animate-in { opacity: 1; transform: translateY(0); }
-      `}</style>
+      ` }} />
 
       {/* Hero Section */}
       <section className="relative min-h-[75vh] md:h-[85vh] flex items-center justify-center bg-gray-900 overflow-hidden py-20 md:py-0">
