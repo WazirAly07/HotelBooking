@@ -87,6 +87,20 @@ const AboutUs = () => {
       }]);
       
       if (error) throw error;
+
+      // Send Email Notification
+      await fetch("https://formsubmit.co/ajax/baltistantourismclub00@gmail.com", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({
+          Subject: "New Guest Feedback from " + feedbackData.customerName,
+          Customer: feedbackData.customerName,
+          Location: feedbackData.location,
+          Rating: feedbackData.rating + " Stars",
+          Comment: feedbackData.comment,
+          "_template": "table"
+        })
+      });
       
       setFeedbackStatus("success");
       setFeedbackData({ 

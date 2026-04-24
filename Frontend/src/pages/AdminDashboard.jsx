@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
-import { Upload, X, Loader2, Image as ImageIcon, Tag, Info, DollarSign, Layout, MapPin, Search, Plus, Clock, Calendar, CheckCircle, Menu, Plane, FileText } from "lucide-react";
+import { Upload, X, Loader2, Image as ImageIcon, Tag, Info, DollarSign, Layout, MapPin, Search, Plus, Clock, Calendar, CheckCircle, Menu, Plane, FileText, Printer, AlertCircle, Phone } from "lucide-react";
+import logo from "../assets/Images/logo.png";
 
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -14,6 +15,8 @@ const AdminDashboard = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [viewingPlan, setViewingPlan] = useState(null);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [additionalCharge, setAdditionalCharge] = useState(0);
   const navigate = useNavigate();
 
   const fetchStats = async () => {
@@ -122,6 +125,8 @@ const AdminDashboard = () => {
       if (activeTab === "manageFeedback") fetchItems("feedback");
       if (activeTab === "manageExperts") fetchItems("experts");
       if (activeTab === "tripPlans") fetchTripPlans();
+      if (activeTab === "bookings") fetchBookings();
+      if (activeTab === "inquiries") fetchInquiries();
     }
   }, [activeTab, loading]);
 
@@ -142,10 +147,22 @@ const AdminDashboard = () => {
     if (!error) {
       alert("Deleted successfully");
       if (table === "trip_plans") fetchTripPlans();
+      else if (table === "bookings") fetchBookings();
+      else if (table === "inquiries") fetchInquiries();
       else fetchItems(table);
       fetchStats();
     } else {
       alert("Error deleting item: " + error.message);
+    }
+  };
+
+  const updateBookingStatus = async (id, status) => {
+    const { error } = await supabase.from("bookings").update({ status }).eq("id", id);
+    if (!error) {
+      alert(`Booking ${status} successfully!`);
+      fetchBookings();
+    } else {
+      alert("Error updating status: " + error.message);
     }
   };
 
@@ -333,12 +350,15 @@ const AdminDashboard = () => {
         {activeTab === "bookings" && (
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[600px]">
+              <table className="w-full text-left border-collapse min-w-[1000px]">
                 <thead className="bg-gray-50/80">
                   <tr>
                     <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Customer</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Type</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Package</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Date</th>
                     <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -346,16 +366,96 @@ const AdminDashboard = () => {
                     <tr key={b.id || idx} className="hover:bg-blue-50/30 transition-colors">
                       <td className="px-6 py-4">
                         <div className="text-sm font-bold text-gray-800">{b.customer_name}</div>
-                        <div className="text-[10px] text-gray-400 font-medium">{b.customer_email}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-[10px] font-black bg-gray-100 px-2 py-1 rounded uppercase tracking-tighter">{b.type}</span>
-                        <div className="text-[10px] text-gray-400 mt-1">{b.booking_date ? new Date(b.booking_date).toLocaleDateString() : 'N/A'}</div>
+                        <div className="text-xs font-black text-blue-600 flex items-center gap-1"><Phone size={10} /> {b.phone_number}</div>
+                        <div className="text-[10px] text-gray-400 font-medium">{b.customer_email || "No Email"}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${b.status === "confirmed" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
+                        <div className="text-sm font-bold text-gray-800">{b.package_name || b.type}</div>
+                        <div className="text-[10px] text-blue-600 font-black uppercase tracking-widest">{b.type}</div>
+                      </td>
+                      <td className="px-6 py-4 text-xs font-bold text-gray-500">
+                        {b.booking_date ? new Date(b.booking_date).toLocaleDateString() : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${b.status === "confirmed" ? "bg-green-100 text-green-700" : b.status === "cancelled" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
                           {b.status || "pending"}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                           {b.status !== "confirmed" && (
+                             <button onClick={() => updateBookingStatus(b.id, "confirmed")} className="bg-green-50 text-green-700 p-2 rounded-lg hover:bg-green-100 transition-colors" title="Confirm Success">
+                               <CheckCircle size={14} />
+                             </button>
+                           )}
+                           {b.status !== "cancelled" && (
+                             <button onClick={() => updateBookingStatus(b.id, "cancelled")} className="bg-red-50 text-red-700 p-2 rounded-lg hover:bg-red-100 transition-colors" title="Cancel Booking">
+                               <X size={14} />
+                             </button>
+                           )}
+                           {b.status === "confirmed" && (
+                             <button onClick={() => setSelectedInvoice(b)} className="bg-blue-50 text-blue-700 p-2 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1 text-[10px] font-black uppercase" title="Generate Invoice">
+                               <Printer size={14} /> Invoice
+                             </button>
+                           )}
+                           <button onClick={() => handleDelete("bookings", b.id)} className="bg-gray-100 text-gray-500 p-2 rounded-lg hover:bg-red-100 hover:text-red-700 transition-colors">
+                             <AlertCircle size={14} />
+                           </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {selectedInvoice && (
+          <InvoiceModal 
+            booking={selectedInvoice} 
+            onClose={() => { setSelectedInvoice(null); setAdditionalCharge(0); }} 
+            additionalCharge={additionalCharge}
+            setAdditionalCharge={setAdditionalCharge}
+          />
+        )}
+
+        {activeTab === "inquiries" && (
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[800px]">
+                <thead className="bg-gray-50/80">
+                  <tr>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Customer</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Message</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Date</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {inquiries.length === 0 ? (
+                    <tr><td colSpan="4" className="px-6 py-12 text-center text-gray-500 italic font-bold">No inquiries found.</td></tr>
+                  ) : inquiries.map((i) => (
+                    <tr key={i.id} className="hover:bg-amber-50/30 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="text-sm font-bold text-gray-800">{i.name}</div>
+                        <div className="text-[10px] text-blue-600 font-black flex items-center gap-1 mt-1"><Phone size={10} /> {i.phone}</div>
+                        <div className="text-[10px] text-gray-400 font-medium">{i.email || "No Email"}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-sm text-gray-600 line-clamp-2 max-w-md">{i.message}</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest">
+                          {i.created_at ? new Date(i.created_at).toLocaleDateString() : 'N/A'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button onClick={() => handleDelete("inquiries", i.id)} className="bg-red-50 text-red-700 p-2 rounded-lg hover:bg-red-100 transition-colors">
+                          <X size={14} />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -442,6 +542,164 @@ const AdminDashboard = () => {
           </div>
         )}
       </main>
+    </div>
+  );
+};
+
+const InvoiceModal = ({ booking, onClose, additionalCharge, setAdditionalCharge }) => {
+  const invoiceRef = useRef();
+  const [basePrice, setBasePrice] = useState(0);
+
+  useEffect(() => {
+    const fetchBasePrice = async () => {
+      let table = booking.type.toLowerCase() === "tour" ? "tours" : "hotels";
+      const { data, error } = await supabase
+        .from(table)
+        .select(booking.type.toLowerCase() === "tour" ? "price" : "price_per_night")
+        .eq("name", booking.package_name)
+        .single();
+      
+      if (!error && data) {
+        setBasePrice(data.price || data.price_per_night || 0);
+      }
+    };
+    fetchBasePrice();
+  }, [booking]);
+
+  const handlePrint = () => {
+    const printContent = invoiceRef.current.innerHTML;
+    const originalContent = document.body.innerHTML;
+    document.body.innerHTML = printContent;
+    window.print();
+    document.body.innerHTML = originalContent;
+    window.location.reload(); 
+  };
+
+  const total = Number(basePrice) + Number(additionalCharge);
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-white rounded-[2rem] w-full max-w-4xl max-h-[90vh] overflow-y-auto relative z-10 shadow-2xl p-8 md:p-12 flex flex-col md:flex-row gap-8">
+        
+        {/* Settings Panel */}
+        <div className="md:w-1/3 border-r pr-8 space-y-6">
+           <h2 className="text-xl font-black italic uppercase tracking-tighter">Invoice <span className="text-blue-600">Settings</span></h2>
+           <div className="space-y-4">
+             <div>
+               <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Base Price (Auto)</label>
+               <p className="font-bold text-lg">PKR {basePrice.toLocaleString()}</p>
+             </div>
+             <div>
+               <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Add Money / Extra Charges</label>
+               <input 
+                 type="number" 
+                 className="w-full p-3 bg-gray-100 rounded-xl font-bold mt-1 outline-none focus:ring-2 focus:ring-blue-600"
+                 value={additionalCharge}
+                 onChange={(e) => setAdditionalCharge(e.target.value)}
+               />
+             </div>
+             <div className="pt-4 border-t">
+               <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Total Invoice Amount</label>
+               <p className="text-2xl font-black text-blue-600">PKR {total.toLocaleString()}</p>
+             </div>
+           </div>
+           <div className="flex gap-2">
+             <button onClick={handlePrint} className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700">
+               <Printer size={18} /> Print
+             </button>
+             <button onClick={onClose} className="p-3 bg-gray-100 rounded-xl hover:bg-gray-200">
+               <X size={20} />
+             </button>
+           </div>
+        </div>
+
+        {/* Invoice Preview */}
+        <div className="flex-1" ref={invoiceRef}>
+          <div className="bg-white p-8 border shadow-sm rounded-lg" id="printable-invoice">
+             <div className="flex justify-between items-start mb-12">
+                <div className="flex items-center gap-3">
+                   <img src={logo} alt="BTC Logo" className="h-16 w-auto" />
+                   <div className="flex flex-col leading-none">
+                      <span className="text-2xl font-black text-gray-900 tracking-tighter uppercase italic">Baltistan <span className="text-blue-600">Tourism</span></span>
+                      <span className="text-[10px] font-black uppercase text-gray-400 tracking-[0.3em]">Club</span>
+                   </div>
+                </div>
+                <div className="text-right">
+                   <h1 className="text-4xl font-black text-gray-900 uppercase italic mb-1">Invoice</h1>
+                   <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">#{booking.id?.slice(0,8).toUpperCase()}</p>
+                </div>
+             </div>
+
+             <div className="grid grid-cols-2 gap-12 mb-12">
+                <div>
+                   <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-3">Invoice From</h3>
+                   <p className="font-bold text-gray-900">Baltistan Tourism Club</p>
+                   <p className="text-sm text-gray-500 font-medium">Ali Chok, Skardu, Pakistan</p>
+                   <p className="text-sm text-gray-500 font-medium">+92 346 6444471</p>
+                   <p className="text-sm text-gray-500 font-medium">baltistantourismclub00@gmail.com</p>
+                </div>
+                <div className="text-right">
+                   <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-3">Invoice To</h3>
+                   <p className="font-bold text-gray-900">{booking.customer_name}</p>
+                   <p className="text-sm text-gray-500 font-medium">{booking.phone_number}</p>
+                   <p className="text-sm text-gray-500 font-medium">{booking.customer_email}</p>
+                   <p className="text-sm text-gray-500 font-medium mt-2">Date: {new Date().toLocaleDateString()}</p>
+                </div>
+             </div>
+
+             <div className="border-t border-b py-6 mb-8">
+                <table className="w-full text-left">
+                   <thead>
+                      <tr>
+                         <th className="text-[10px] font-black uppercase text-gray-400 tracking-widest pb-4">Description</th>
+                         <th className="text-[10px] font-black uppercase text-gray-400 tracking-widest pb-4 text-right">Amount</th>
+                      </tr>
+                   </thead>
+                   <tbody className="divide-y">
+                      <tr>
+                         <td className="py-4">
+                            <p className="font-bold text-gray-800">{booking.package_name}</p>
+                            <p className="text-xs text-gray-400 font-bold uppercase">{booking.type} Booking - {new Date(booking.booking_date).toLocaleDateString()}</p>
+                         </td>
+                         <td className="py-4 text-right font-bold text-gray-800">PKR {basePrice.toLocaleString()}</td>
+                      </tr>
+                      {Number(additionalCharge) !== 0 && (
+                        <tr>
+                           <td className="py-4 font-bold text-gray-800">Additional Charges / Service Fee</td>
+                           <td className="py-4 text-right font-bold text-gray-800">PKR {Number(additionalCharge).toLocaleString()}</td>
+                        </tr>
+                      )}
+                   </tbody>
+                </table>
+             </div>
+
+             <div className="flex justify-end">
+                <div className="w-64 space-y-3">
+                   <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 font-bold">Subtotal</span>
+                      <span className="font-bold">PKR {total.toLocaleString()}</span>
+                   </div>
+                   <div className="flex justify-between text-lg border-t pt-3">
+                      <span className="font-black uppercase tracking-tighter italic">Total Amount</span>
+                      <span className="font-black text-blue-600 italic">PKR {total.toLocaleString()}</span>
+                   </div>
+                </div>
+             </div>
+
+             <div className="mt-20 pt-8 border-t text-center">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Thank you for choosing Baltistan Tourism Club</p>
+                <p className="text-[8px] text-gray-300 mt-2 uppercase tracking-widest">This is a computer generated invoice and does not require a physical signature.</p>
+             </div>
+          </div>
+        </div>
+      </div>
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          #printable-invoice, #printable-invoice * { visibility: visible; }
+          #printable-invoice { position: absolute; left: 0; top: 0; width: 100%; border: none; shadow: none; }
+        }
+      `}</style>
     </div>
   );
 };

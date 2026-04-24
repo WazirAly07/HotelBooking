@@ -6,7 +6,7 @@ const Footer = () => {
   const socialLinks = [
     {
       name: "Facebook",
-      url: "https://facebook.com/baltistantourismclub",
+      url: "https://www.facebook.com/p/Baltistan-Tourism-Club-61570937709447/",
       icon: (
         <svg size={18} fill="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
           <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" />
@@ -15,7 +15,7 @@ const Footer = () => {
     },
     {
       name: "Instagram",
-      url: "https://instagram.com/baltistantourismclub",
+      url: "https://www.instagram.com/baltistan_t0urism_club?igsh=MWtuMTkwcDBsaXBseg%3D%3D",
       icon: (
         <svg size={18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
           <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
@@ -103,7 +103,7 @@ const Footer = () => {
             <ul className="space-y-5 text-gray-400 text-sm font-bold">
               <li className="flex items-start gap-3">
                 <MapPin className="h-5 w-5 text-blue-500 flex-shrink-0" />
-                <span>Skardu, Gilgit-Baltistan, <br />Pakistan</span>
+                <span><a href="https://www.google.com/maps/search/?api=1&query=Wazir+Guest+house+ali+chok+Skardu+Pakistan" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Skardu, Gilgit-Baltistan, <br />Pakistan</a></span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="h-5 w-5 text-blue-500 flex-shrink-0" />
@@ -111,7 +111,7 @@ const Footer = () => {
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="h-5 w-5 text-blue-500 flex-shrink-0" />
-                <span>info@baltistantourismclub.com</span>
+                <span>baltistantourismclub00@gmail.com</span>
               </li>
             </ul>
           </div>

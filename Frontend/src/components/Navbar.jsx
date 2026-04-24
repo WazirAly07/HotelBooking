@@ -39,7 +39,7 @@ const Navbar = () => {
 
   return (
     <nav className="bg-white shadow-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2">
         <div className="flex justify-between h-16">
           {/* Logo */}
           <div className="flex items-center">
@@ -55,15 +55,27 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Menu */}
-          <div className="hidden lg:flex items-center space-x-6">
+          <div className="hidden lg:flex items-center space-x-3">
             {navLinks.map((link) => (
-              <Link 
-                key={link.name}
-                to={link.path} 
-                className="text-gray-700 hover:text-blue-600 font-medium transition-colors flex items-center gap-1"
-              >
-                {link.icon} {link.name}
-              </Link>
+              link.isExternal ? (
+                <a 
+                  key={link.name}
+                  href={link.path}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-700 hover:text-blue-600 font-medium transition-colors flex items-center gap-1"
+                >
+                  {link.icon} {link.name}
+                </a>
+              ) : (
+                <Link 
+                  key={link.name}
+                  to={link.path} 
+                  className="text-gray-700 hover:text-blue-600 font-medium transition-colors flex items-center gap-1"
+                >
+                  {link.icon} {link.name}
+                </Link>
+              )
             ))}
             
             {user ? (
@@ -106,17 +118,33 @@ const Navbar = () => {
       <div className={`lg:hidden transition-all duration-300 ease-in-out overflow-hidden ${isOpen ? "max-h-[32rem] opacity-100" : "max-h-0 opacity-0"}`}>
         <div className="px-4 pt-2 pb-6 space-y-1 bg-white border-t border-gray-100 shadow-inner">
           {navLinks.map((link) => (
-            <Link
-              key={link.name}
-              to={link.path}
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-            >
-              <span className="p-2 bg-gray-50 rounded-lg text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-600">
-                {link.icon}
-              </span>
-              {link.name}
-            </Link>
+            link.isExternal ? (
+              <a
+                key={link.name}
+                href={link.path}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+              >
+                <span className="p-2 bg-gray-50 rounded-lg text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-600">
+                  {link.icon}
+                </span>
+                {link.name}
+              </a>
+            ) : (
+              <Link
+                key={link.name}
+                to={link.path}
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+              >
+                <span className="p-2 bg-gray-50 rounded-lg text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-600">
+                  {link.icon}
+                </span>
+                {link.name}
+              </Link>
+            )
           ))}
           <div className="pt-4 px-4 space-y-3">
             {user ? (

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { MapPin, Clock, Star, ArrowRight, ShieldCheck, Mountain, Camera, Search, Lock, Plus, Trash2, Image as ImageIcon, Upload, Loader2, Plane, Car, X, CheckCircle } from "lucide-react";
+import { MapPin, Clock, Star, ArrowRight, ShieldCheck, Mountain, Camera, Search, Lock, Plus, Trash2, Image as ImageIcon, Upload, Loader2, Plane, Car, X, CheckCircle, Phone } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import logo from "../assets/Images/logo.png";
+import { message } from "antd";
 
 // Import cover images
 import cover1 from "../assets/Images/covers.png";
@@ -12,11 +13,11 @@ import cover3 from "../assets/Images/cover3.png";
 const Landing = () => {
   const [tours, setTours] = useState([]);
   const [hotels, setHotels] = useState([]);
-  const [albums, setAlbums] = useState([]);
+  const [latestMemories, setLatestMemories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [heroImage, setHeroImage] = useState(cover1);
   const [showPreloader, setShowPreloader] = useState(() => {
-    return !localStorage.getItem("preloaderShown");
+    return !sessionStorage.getItem("preloaderShown");
   });
   const [preloaderFade, setPreloaderFade] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -27,6 +28,7 @@ const Landing = () => {
   const [inquiryData, setInquiryData] = useState({
     name: "",
     email: "",
+    phone: "",
     message: ""
   });
   const [inquiryStatus, setInquiryStatus] = useState(null);
@@ -77,13 +79,13 @@ const Landing = () => {
   const fetchData = async (query = "") => {
     setLoading(true);
     try {
-      let tourQuery = supabase.from("tours").select("*");
-      let hotelQuery = supabase.from("hotels").select("*");
-      let feedbackQuery = supabase.from("feedback").select("*").order('created_at', { ascending: false });
+      let tourQuery = supabase.from("tours").select("*").limit(4);
+      let hotelQuery = supabase.from("hotels").select("*").limit(3);
+      let feedbackQuery = supabase.from("feedback").select("*").order('created_at', { ascending: false }).limit(4);
 
       if (query) {
-        tourQuery = tourQuery.ilike("name", `%${query}%`);
-        hotelQuery = hotelQuery.ilike("name", `%${query}%`);
+        tourQuery = supabase.from("tours").select("*").ilike("name", `%${query}%`).limit(4);
+        hotelQuery = supabase.from("hotels").select("*").ilike("name", `%${query}%`).limit(3);
       }
 
       const [
@@ -102,20 +104,8 @@ const Landing = () => {
 
       setTours(toursData || []);
       setHotels(hotelsData || []);
+      setLatestMemories(feedbackData || []);
       
-      const photoMemories = (feedbackData || []).filter(item => 
-        item.image_url && item.image_url.includes("supabase.co/storage")
-      );
-
-      const grouped = photoMemories.reduce((acc, current) => {
-        const loc = current.location || "General";
-        if (!acc[loc]) acc[loc] = { location: loc, images: [], stories: [] };
-        acc[loc].images.push(current.image_url);
-        acc[loc].stories.push({ name: current.customer_name, comment: current.comment });
-        return acc;
-      }, {});
-      
-      setAlbums(Object.values(grouped));
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -129,9 +119,9 @@ const Landing = () => {
       setPreloaderFade(true);
       setTimeout(() => {
         setShowPreloader(false);
-        localStorage.setItem("preloaderShown", "true");
-      }, 700);
-    }, 2500);
+        sessionStorage.setItem("preloaderShown", "true");
+      }, 500);
+    }, 1200); 
     return () => clearTimeout(timer);
   }, []);
 
@@ -153,23 +143,76 @@ const Landing = () => {
 
   const handleInquirySubmit = async (e) => {
     e.preventDefault();
+    if (!inquiryData.phone) {
+      message.error("Phone number is required!");
+      return;
+    }
+
     try {
-      const { error } = await supabase.from("inquiries").insert([inquiryData]);
+      const { error } = await supabase.from("inquiries").insert([{
+        name: inquiryData.name,
+        email: inquiryData.email,
+        phone: inquiryData.phone,
+        message: inquiryData.message
+      }]);
       if (error) throw error;
+      
+      // Send Email Notification
+      await fetch("https://formsubmit.co/ajax/baltistantourismclub00@gmail.com", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({
+          Subject: "New Inquiry from " + inquiryData.name,
+          Name: inquiryData.name,
+          Phone: inquiryData.phone,
+          Email: inquiryData.email || "Not provided",
+          Message: inquiryData.message,
+          "_template": "table"
+        })
+      });
+
+      message.success("Inquiry sent successfully!");
       setInquiryStatus("success");
-      setInquiryData({ name: "", email: "", message: "" });
+      setInquiryData({ name: "", email: "", phone: "", message: "" });
       setTimeout(() => setInquiryStatus(null), 5000);
     } catch (error) {
       console.error("Inquiry failed:", error);
+      message.error("Failed to send inquiry. Please try again.");
       setInquiryStatus("error");
     }
   };
 
   const handlePlanSubmit = async (e) => {
     e.preventDefault();
+    if (!tripPlan.phone_number) {
+      message.error("Phone number is required!");
+      return;
+    }
+
     try {
       const { error } = await supabase.from("trip_plans").insert([tripPlan]);
       if (error) throw error;
+
+      // Send Email Notification
+      await fetch("https://formsubmit.co/ajax/baltistantourismclub00@gmail.com", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({
+          Subject: "New Custom Trip Plan Request from " + tripPlan.customer_name,
+          Customer: tripPlan.customer_name,
+          Phone: tripPlan.phone_number,
+          Email: tripPlan.customer_email || "Not provided",
+          Destination: tripPlan.destination,
+          Travelers: tripPlan.travelers_count,
+          Date: tripPlan.travel_date,
+          Duration: tripPlan.duration,
+          Category: tripPlan.travel_category,
+          Requirements: tripPlan.requirements,
+          "_template": "table"
+        })
+      });
+
+      message.success("Trip plan request submitted successfully!");
       setPlanStatus("success");
       setTripPlan({
         customer_name: "",
@@ -190,77 +233,14 @@ const Landing = () => {
       }, 3000);
     } catch (error) {
       console.error("Plan submission failed:", error);
-      alert("Error: " + error.message);
-    }
-  };
-
-  const handleFileChange = (e) => {
-    if (e.target.files) {
-      setSelectedFiles(Array.from(e.target.files));
-    }
-  };
-
-  const handleMemorySubmit = async (e) => {
-    e.preventDefault();
-    if (!user) {
-      navigate("/login");
-      return;
-    }
-    if (selectedFiles.length === 0) {
-      alert("Please select at least one image!");
-      return;
-    }
-
-    setUploading(true);
-    try {
-      const file = selectedFiles[0];
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('memories')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('memories')
-        .getPublicUrl(filePath);
-
-      const { error } = await supabase.from("feedback").insert([{ 
-        customer_name: memoryData.customerName,
-        comment: memoryData.comment,
-        location: memoryData.location,
-        image_url: publicUrl,
-        rating: 5 
-      }]);
-      
-      if (error) throw error;
-      setMemoryStatus("success");
-      setMemoryData({
-        customerName: user.user_metadata?.full_name || "",
-        comment: "",
-        location: "",
-      });
-      setSelectedFiles([]);
-      fetchData();
-      setTimeout(() => setMemoryStatus(null), 5000);
-    } catch (error) {
-      console.error("Memory submission failed:", error);
-      alert("Error: " + error.message);
-      setMemoryStatus("error");
-    } finally {
-      setUploading(false);
+      message.error("Failed to submit trip plan. Please try again.");
     }
   };
 
   if (showPreloader) {
     return (
-      <div className={`fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center transition-opacity duration-700 ${preloaderFade ? "opacity-0" : "opacity-100"}`}>
-        <video autoPlay muted loop playsInline className="absolute w-full h-full object-cover opacity-50 scale-105">
-          <source src="https://assets.mixkit.co/videos/preview/mixkit-flying-over-a-snowy-mountain-peak-42845-large.mp4" type="video/mp4" />
-        </video>
+      <div className={`fixed inset-0 z-[9999] bg-blue-900 flex flex-col items-center justify-center transition-opacity duration-700 ${preloaderFade ? "opacity-0" : "opacity-100"}`}>
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-gray-900 to-black opacity-90"></div>
         
         <div className="relative z-10 overflow-hidden px-4">
           <div className="flex flex-col items-center gap-12 animate-[zoomIn_1s_ease-out_forwards]">
@@ -270,14 +250,14 @@ const Landing = () => {
               <img 
                 src={logo} 
                 alt="Logo" 
+                loading="eager"
                 className="relative h-48 w-48 md:h-72 md:w-72 rounded-full object-cover border-8 border-white/10 shadow-[0_0_50px_rgba(59,130,246,0.3)] animate-pulse" 
               />
             </div>
 
             <div className="flex flex-col items-center gap-6">
-              {/* Loader moved to top of text */}
               <div className="w-48 md:w-80 h-2 bg-white/10 rounded-full overflow-hidden backdrop-blur-sm">
-                <div className="h-full bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.8)] animate-[loading_2s_ease-in-out_forwards]"></div>
+                <div className="h-full bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.8)] animate-[loading_1s_ease-in-out_forwards]"></div>
               </div>
               
               <div className="flex flex-col items-center text-center">
@@ -318,7 +298,7 @@ const Landing = () => {
       {/* Hero Section */}
       <section className="relative min-h-[75vh] md:h-[85vh] flex items-center justify-center bg-gray-900 overflow-hidden py-20 md:py-0">
         <div className="absolute inset-0 z-0">
-          <img src={heroImage} className="w-full h-full object-cover opacity-50 scale-105 animate-[zoomOutHero_25s_infinite]" alt="Hero" />
+          <img src={heroImage} loading="eager" className="w-full h-full object-cover opacity-50 scale-105 animate-[zoomOutHero_25s_infinite]" alt="Hero" />
           <div className="absolute inset-0 bg-gradient-to-b from-blue-900/40 via-gray-900/60 to-gray-900"></div>
         </div>
         
@@ -385,7 +365,14 @@ const Landing = () => {
                     <option value="By Air">By Air</option>
                   </select>
 
-                  <input required type="date" className="w-full p-4 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-blue-500 font-bold uppercase text-xs" value={tripPlan.travel_date} onChange={(e) => setTripPlan({ ...tripPlan, travel_date: e.target.value })} />
+                  <input 
+                    required 
+                    type="date" 
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full p-4 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-blue-500 font-bold uppercase text-xs" 
+                    value={tripPlan.travel_date} 
+                    onChange={(e) => setTripPlan({ ...tripPlan, travel_date: e.target.value })} 
+                  />
                 </div>
                 <textarea placeholder="Additional Requirements & Itinerary Details (Optional)" className="w-full p-4 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-blue-500 h-32 resize-none font-medium" value={tripPlan.requirements} onChange={(e) => setTripPlan({ ...tripPlan, requirements: e.target.value })}></textarea>
                 <button type="submit" className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black uppercase hover:bg-blue-700 shadow-xl transition-all">Submit Trip Request</button>
@@ -403,7 +390,6 @@ const Landing = () => {
               <h2 className="text-3xl md:text-5xl font-black text-gray-900 mb-3 md:mb-4 italic uppercase">Adventure Awaits</h2>
               <p className="text-base md:text-lg text-gray-600 font-medium">Hand-picked tour packages in the Karakoram & Himalayas.</p>
             </div>
-            <button className="text-blue-600 font-black hover:underline transition-all uppercase tracking-widest text-sm">View All Tours →</button>
           </div>
 
           {loading ? (
@@ -413,7 +399,7 @@ const Landing = () => {
               {tours.map((tour, idx) => (
                 <div key={tour.id} onClick={() => navigate(`/tour/${tour.id}`)} className={`reveal delay-${(idx % 4) * 100} group bg-gray-50 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 flex flex-col cursor-pointer`}>
                   <div className="relative h-48 md:h-56 overflow-hidden">
-                    <img src={tour.image_url?.split(',')[0]} alt={tour.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                    <img src={tour.image_url?.split(',')[0]} loading="lazy" alt={tour.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                     <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
                       <div className="bg-white/90 px-3 py-1 rounded-full text-xs font-bold text-blue-600 shadow-sm uppercase tracking-wider">{tour.duration}</div>
                       <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg ${
@@ -454,7 +440,7 @@ const Landing = () => {
               {hotels.map((hotel, idx) => (
                 <div key={hotel.id} onClick={() => navigate(`/hotel/${hotel.id}`)} className={`reveal delay-${(idx % 3) * 100} bg-white rounded-[3rem] overflow-hidden shadow-xl group hover:-translate-y-2 transition-transform duration-500 cursor-pointer`}>
                   <div className="relative h-64 md:h-72">
-                    <img src={hotel.image_url?.split(',')[0]} alt={hotel.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                    <img src={hotel.image_url?.split(',')[0]} loading="lazy" alt={hotel.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-6 md:p-8">
                       <div>
                         <div className="flex items-center gap-1 text-white/90 text-xs mb-1"><MapPin className="h-4 w-4" /> {hotel.location}</div>
@@ -470,7 +456,18 @@ const Landing = () => {
                     </div>
                     <div className="flex justify-between items-center">
                       <div><span className="text-2xl font-black text-blue-600">PKR {hotel.price_per_night?.toLocaleString()}</span><span className="text-gray-500 text-xs font-bold uppercase tracking-widest ml-1"> / night</span></div>
-                      <button className="bg-gray-900 text-white px-6 py-2 rounded-xl font-bold hover:bg-black transition-colors">Book</button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/hotel/${hotel.id}`);
+                          setTimeout(() => {
+                            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                          }, 500);
+                        }}
+                        className="bg-gray-900 text-white px-6 py-2 rounded-xl font-bold hover:bg-black transition-colors"
+                      >
+                        Book
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -480,41 +477,34 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Memories (Album) Section */}
+      {/* Guest Memories Section */}
       <section id="memories" className="py-16 md:py-24 bg-white overflow-hidden">
         <div className="max-w-7xl mx-auto px-4">
           <div className="reveal flex flex-col md:flex-row justify-between items-end mb-16 gap-4">
             <div className="text-center md:text-left">
-              <h2 className="text-3xl md:text-5xl font-black text-gray-900 mb-4 tracking-tighter uppercase italic">Guest Memories</h2>
-              <p className="text-lg text-gray-600 font-medium">Explore Baltistan through the eyes of our guests.</p>
+              <h2 className="text-3xl md:text-5xl font-black text-gray-900 mb-4 tracking-tighter uppercase italic text-blue-600">Latest Memories</h2>
+              <p className="text-lg text-gray-600 font-medium">Shared by our community of travelers.</p>
             </div>
             <Link to="/memories" className="bg-blue-600 text-white px-8 py-3 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2">
               View All Memories <ArrowRight className="h-5 w-5" />
             </Link>
           </div>
           
-          <div className="space-y-20 mb-24">
-            {albums.slice(0, 2).map((album, idx) => (
-              <div key={idx} className="reveal space-y-8">
-                <div className="flex items-center gap-4">
-                  <div className="h-px flex-1 bg-gray-100"></div>
-                  <h3 className="text-2xl md:text-4xl font-black text-blue-900 flex items-center gap-3 italic uppercase tracking-tighter">
-                    <MapPin className="h-6 w-6 text-blue-600" /> {album.location}
-                  </h3>
-                  <div className="h-px flex-1 bg-gray-100"></div>
+          {loading ? (
+             <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin h-12 w-12 text-blue-600" /></div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {latestMemories.map((memory, idx) => (
+                <div key={idx} className="reveal group relative aspect-square rounded-3xl overflow-hidden shadow-lg border-2 border-gray-50 hover:shadow-2xl transition-all duration-700">
+                  <img src={memory.image_url} loading="lazy" alt="Guest Memory" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-end p-6">
+                    <p className="text-white font-bold text-sm mb-1">{memory.customer_name}</p>
+                    <p className="text-gray-300 text-xs italic line-clamp-2">"{memory.comment}"</p>
+                  </div>
                 </div>
-                
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {album.images.slice(0, 4).map((img, imgIdx) => (
-                    <div key={imgIdx} className="aspect-square rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-700 group relative border-2 border-gray-50">
-                      <img src={img} alt={album.location} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -538,7 +528,8 @@ const Landing = () => {
                ) : (
                  <form onSubmit={handleInquirySubmit} className="space-y-4">
                     <input required placeholder="Your Name" className="w-full p-4 rounded-xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-bold shadow-sm transition-all" value={inquiryData.name} onChange={(e) => setInquiryData({...inquiryData, name: e.target.value})} />
-                    <input required type="email" placeholder="Your Email" className="w-full p-4 rounded-xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-bold shadow-sm transition-all" value={inquiryData.email} onChange={(e) => setInquiryData({...inquiryData, email: e.target.value})} />
+                    <input required type="tel" placeholder="Phone Number *" className="w-full p-4 rounded-xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-bold shadow-sm transition-all" value={inquiryData.phone} onChange={(e) => setInquiryData({...inquiryData, phone: e.target.value})} />
+                    <input type="email" placeholder="Email Address (Optional)" className="w-full p-4 rounded-xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-bold shadow-sm transition-all" value={inquiryData.email} onChange={(e) => setInquiryData({...inquiryData, email: e.target.value})} />
                     <textarea required placeholder="Requirements..." className="w-full p-4 rounded-xl border-none outline-none focus:ring-2 focus:ring-blue-500 h-32 resize-none font-medium shadow-sm transition-all" value={inquiryData.message} onChange={(e) => setInquiryData({...inquiryData, message: e.target.value})}></textarea>
                     <button type="submit" className="w-full bg-gray-900 text-white p-4 rounded-xl font-black uppercase hover:bg-black transition-all active:scale-[0.98]">Send Message</button>
                  </form>

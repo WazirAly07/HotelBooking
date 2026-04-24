@@ -152,26 +152,6 @@ const Memories = () => {
         )}
       </div>
 
-      {/* Modern Footer CTA */}
-      <section className="bg-gray-900 py-24 md:py-32 relative overflow-hidden w-full">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full blur-[100px] -mr-32 -mt-32"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-600/10 rounded-full blur-[100px] -ml-32 -mb-32"></div>
-        
-        <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
-          <div className="inline-flex items-center gap-2 bg-blue-600/10 text-blue-500 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest mb-8">
-            <Heart size={12} className="fill-current" /> Community Gallery
-          </div>
-          <h2 className="text-3xl md:text-6xl font-black text-white mb-8 tracking-tighter italic uppercase leading-none">
-            Your Journey <br /> <span className="text-blue-600">Our Gallery</span>
-          </h2>
-          <p className="text-gray-400 mb-12 text-sm md:text-lg font-medium max-w-2xl mx-auto leading-relaxed px-4">
-            Every photo tells a story. Share yours and let the world see the majesty of Baltistan through your lens.
-          </p>
-          <Link to="/" className="bg-blue-600 text-white px-12 py-5 rounded-2xl font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-blue-600/20 inline-block text-lg tracking-tight">
-            POST YOUR MEMORY
-          </Link>
-        </div>
-      </section>
     </div>
   );
 };
